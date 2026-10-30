@@ -53,12 +53,9 @@
     <label class="form-label fw-bold small">사원 선택</label>
     <select id="user-select" class="form-select" onchange="saveUserName(this.value)">
       <option value="">이름을 선택하세요</option>
-      <option value="신나래">신나래</option>
-      <option value="박경선">박경선</option>
-      <option value="최희원">최희원</option>
+      <option value="김청식">김청식</option>
       <option value="신홍지">신홍지</option>
-      <option value="배미희">배미희</option>
-     <option value="김청식">김청식</option>
+      <option value="최희원">최희원</option>
     </select>
   </div>
 
@@ -80,8 +77,8 @@
 </div>
 
 <script>
-  // 📌 배포하신 Google Apps Script 웹앱 URL
-  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwvgzKPhQQgkNV99p35JHR7D1eshI29UOlybVngXsIU1uGxNv-pvIzJobjJTq2tfKe_/exec";
+  // 📌 배포하신 Google Apps Script 웹앱 URL을 입력해 주세요.
+  const GOOGLE_SCRIPT_URL = "여기에_배포한_Google_Apps_Script_URL을_붙여넣으세요";
 
   let userIp = "확인중";
   let userDevice = "PC";
@@ -116,7 +113,7 @@
     checkAndAutoProcess();
   }
 
-  // ⏰ 출퇴근 자동 처리 및 3초 타이머 시작
+  // ⏰ 출퇴근 자동 처리 및 3초 타이머 동작
   function checkAndAutoProcess() {
     const userName = document.getElementById("user-select").value;
     const statusBox = document.getElementById("status-box");
@@ -168,7 +165,7 @@
     }
   }
 
-  // ⏳ N초 카운트다운 후 창 자동 닫기 함수
+  // ⏳ N초 카운트다운 후 창 자동 닫기
   function startAutoClose(seconds = 3) {
     stopAutoClose();
     let secondsLeft = seconds;
@@ -188,7 +185,7 @@
     }, 1000);
   }
 
-  // 🛑 비고 입력 시 자동 닫힘 정지
+  // 🛑 입력 중 자동 닫힘 타이머 정지
   function stopAutoClose() {
     if (countdownTimer) clearInterval(countdownTimer);
     const timerElem = document.getElementById("close-timer");
@@ -226,7 +223,7 @@
     startAutoClose(3);
   }
 
-  // 📡 데이터 전송 (sendBeacon 사용 - PC 종료 시 백그라운드 무손실 전송)
+  // 📡 데이터 전송 (sendBeacon으로 브라우저/PC 종료 시 무손실 백그라운드 전송)
   function sendData(type, notes) {
     const userName = document.getElementById("user-select").value;
     if (!userName) return;
@@ -260,13 +257,12 @@
     }, 1000);
   }
 
-  // 🛑 PC 종료 / 창 닫기 이벤트 시 백그라운드 자동 퇴근 전송
+  // 🛑 PC 종료 / 창 파괴 시 백그라운드 자동 퇴근 전송 (pagehide 사용으로 화면보호기 오작동 방지)
   window.addEventListener("pagehide", function (event) {
     const userName = document.getElementById("user-select").value;
     const currentHour = new Date().getHours();
     const notes = document.getElementById("notes-input").value;
 
-    // 오후 5시 이후 PC 전원 종료 및 창 파괴 시에만 작동
     if (userName && currentHour >= 17) {
       sendData("퇴근", notes || "PC 종료 자동 퇴근");
     }
