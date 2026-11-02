@@ -58,7 +58,7 @@
       <option value="최희원">최희원</option>
       <option value="신홍지">신홍지</option>
       <option value="배미희">배미희</option>
-     <option value="김청식">김청식</option>
+      <option value="김청식">김청식</option>
     </select>
   </div>
 
@@ -80,12 +80,19 @@
 </div>
 
 <script>
-  // 📌 배포하신 Google Apps Script 웹앱 URL을 입력해 주세요.
+  // 📌 적용하신 Google Apps Script 웹앱 URL
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzf_kQEKwURu3CqbR4Ov0tHak7QSnc51X42AT8cAeNf3w1UDIdREYaxhyXmMCB-Rcw/exec";
 
   let userIp = "확인중";
   let userDevice = "PC";
   let countdownTimer = null;
+
+  // 🇰🇷 한국 시간(KST, YYYY-MM-DD) 날짜 키 생성 함수 (365일 호환)
+  function getKstDateKey() {
+    const now = new Date();
+    const kstDate = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    return "att_checkin_" + kstDate.toISOString().slice(0, 10);
+  }
 
   function saveUserName(name) {
     if (name) {
@@ -129,7 +136,7 @@
       return;
     }
 
-    const todayKey = "att_checkin_" + new Date().toISOString().slice(0, 10);
+    const todayKey = getKstDateKey();
     const isCheckedInToday = localStorage.getItem(todayKey);
 
     if (isCheckedInToday) {
@@ -212,7 +219,7 @@
     sendData(type, notes);
 
     if (type === "출근") {
-      const todayKey = "att_checkin_" + new Date().toISOString().slice(0, 10);
+      const todayKey = getKstDateKey();
       localStorage.setItem(todayKey, "true");
       const btnCheckin = document.getElementById("btn-checkin");
       btnCheckin.disabled = true;
@@ -226,7 +233,7 @@
     startAutoClose(3);
   }
 
-  // 📡 데이터 전송 (sendBeacon으로 브라우저/PC 종료 시 무손실 백그라운드 전송)
+  // 📡 데이터 전송 (fetch + sendBeacon 보완 적용)
   function sendData(type, notes) {
     const userName = document.getElementById("user-select").value;
     if (!userName) return;
@@ -241,17 +248,19 @@
       device: userDevice
     });
 
-    if (navigator.sendBeacon) {
-      const blob = new Blob([payload], { type: 'text/plain;charset=utf-8' });
-      navigator.sendBeacon(GOOGLE_SCRIPT_URL, blob);
-    } else {
-      fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: payload
-      });
-    }
+    // 일반 웹 페이지 열림 상태일 때 신뢰성이 더 높은 fetch 우선 사용
+    fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: payload
+    }).catch(() => {
+      // fetch 실패 시 sendBeacon 백업
+      if (navigator.sendBeacon) {
+        const blob = new Blob([payload], { type: 'text/plain;charset=utf-8' });
+        navigator.sendBeacon(GOOGLE_SCRIPT_URL, blob);
+      }
+    });
   }
 
   function startClock() {
@@ -260,14 +269,24 @@
     }, 1000);
   }
 
-  // 🛑 PC 종료 / 창 파괴 시 백그라운드 자동 퇴근 전송 (pagehide 사용으로 화면보호기 오작동 방지)
+  // 🛑 PC 종료 / 창 파괴 시 백그라운드 자동 퇴근 전송
   window.addEventListener("pagehide", function (event) {
     const userName = document.getElementById("user-select").value;
     const currentHour = new Date().getHours();
     const notes = document.getElementById("notes-input").value;
 
     if (userName && currentHour >= 17) {
-      sendData("퇴근", notes || "PC 종료 자동 퇴근");
+      const payload = JSON.stringify({
+        userName: userName,
+        type: "퇴근",
+        notes: notes || "PC 종료 자동 퇴근",
+        ip: userIp,
+        device: userDevice
+      });
+      if (navigator.sendBeacon) {
+        const blob = new Blob([payload], { type: 'text/plain;charset=utf-8' });
+        navigator.sendBeacon(GOOGLE_SCRIPT_URL, blob);
+      }
     }
   });
 
