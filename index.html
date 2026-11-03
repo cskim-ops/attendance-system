@@ -50,7 +50,7 @@
   </div>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyp7juIAFg4llM92erJaYP9ZJ44X6IbHaZ830YK8Hg76Lpw1yWB3omkjPpQsql3HJ_3/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxgMCkyLX_67BIrEU_boVX75Pfd4sX-udUii8DzwpaugceVjbd6o0eCPrQgbxZs6pCM/exec";
 
     let userIp = "-";
     let closeTimer = null;
@@ -66,7 +66,6 @@
       updateClock();
       setInterval(updateClock, 1000);
       
-      // 기기에 저장된 사원명 복원
       const savedName = localStorage.getItem("att_saved_name") || "";
       const nameInput = document.getElementById("userName");
       if (savedName) {
@@ -122,7 +121,6 @@
       const hasCheckedIn = localStorage.getItem(inKey);
       const hasCheckedOut = localStorage.getItem(outKey);
 
-      // 출근 버튼 상태
       if (hasCheckedIn) {
         btnIn.innerText = "출근 완료됨";
         btnIn.disabled = true;
@@ -131,7 +129,6 @@
         btnIn.disabled = false;
       }
 
-      // 퇴근 버튼 상태
       if (hasCheckedOut) {
         btnOut.innerText = "퇴근 완료됨";
         btnOut.disabled = true;
@@ -145,7 +142,6 @@
       const minutes = now.getMinutes();
       const timeVal = hours * 100 + minutes;
 
-      // 자동 체크 및 카운트다운
       if (timeVal >= 700 && timeVal < 1720 && !hasCheckedIn) {
         statusBox.className = "alert-box success";
         statusBox.innerText = `✅ ${name}님 자동 출근 완료!`;
