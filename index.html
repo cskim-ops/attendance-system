@@ -142,15 +142,19 @@
       const minutes = now.getMinutes();
       const timeVal = hours * 100 + minutes;
 
+      // 7시 이후 출근 미완료 시 자동 데이터 전송
       if (timeVal >= 700 && timeVal < 1720 && !hasCheckedIn) {
         statusBox.className = "alert-box success";
-        statusBox.innerText = `✅ ${name}님 자동 출근 완료!`;
+        statusBox.innerText = `✅ ${name}님 자동 출근 전송 중...`;
         submitAttendance('checkIn', 3);
-      } else if (timeVal >= 1720 && !hasCheckedOut) {
+      } 
+      // 17시 20분 이후 퇴근 미완료 시 자동 데이터 전송
+      else if (timeVal >= 1720 && !hasCheckedOut) {
         statusBox.className = "alert-box info";
-        statusBox.innerText = `🌙 ${name}님 자동 퇴근 완료!`;
+        statusBox.innerText = `🌙 ${name}님 자동 퇴근 전송 중...`;
         submitAttendance('checkOut', 5);
-      } else if (hasCheckedIn && !hasCheckedOut) {
+      } 
+      else if (hasCheckedIn && !hasCheckedOut) {
         statusBox.className = "alert-box info";
         statusBox.innerText = `ℹ️ ${name}님 오늘 출근 기록 완료됨`;
         startCountdown(3);
@@ -177,8 +181,6 @@
       const notes = document.getElementById('notes').value.trim();
       const today = new Date().toISOString().split('T')[0];
       const key = (action === 'checkIn') ? `att_in_${name}_${today}` : `att_out_${name}_${today}`;
-      
-      localStorage.setItem(key, new Date().toLocaleTimeString("ko-KR"));
 
       const payload = {
         action: action,
@@ -190,15 +192,24 @@
         device: navigator.userAgent.includes('Mobile') ? '모바일' : 'PC Chrome'
       };
 
+      // 📌 구글 시트로 먼저 전송 시도
       fetch(GAS_URL, {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(payload)
       }).then(() => {
+        // 성공 시 Local Storage 저장
+        localStorage.setItem(key, new Date().toLocaleTimeString("ko-KR"));
         checkUserStatus();
         startCountdown(countdownSec);
-      }).catch(err => console.error("전송 오류:", err));
+      }).catch(err => {
+        console.error("전송 오류:", err);
+        // 오류 발생 시에도 기록 후 카운트다운
+        localStorage.setItem(key, new Date().toLocaleTimeString("ko-KR"));
+        checkUserStatus();
+        startCountdown(countdownSec);
+      });
     }
 
     function startCountdown(seconds) {
@@ -221,7 +232,12 @@
           notice.innerText = `${left}초 후 창을 닫는 중...`;
         } else {
           clearInterval(closeTimer);
+          // 브라우저 닫기 시도 (스크립트로 열리지 않은 경우 닫히지 않는 브라우저 보안 이슈 대응)
           window.close();
+          // window.close()가 차단될 경우 빈 화면 처리
+          setTimeout(() => {
+            notice.innerText = "✅ 기록 완료! 창을 닫으셔도 됩니다.";
+          }, 500);
         }
       }, 1000);
     }
