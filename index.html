@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+GitHub Pages<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -114,8 +114,8 @@
   </div>
 
   <div class="form-group">
-    <label for="notes">비고 (특이사항 - 클릭 시 창 자동닫힘 멈춤)</label>
-    <textarea id="notes" rows="2" placeholder="사유 기재 시 창이 닫히지 않고 유지됩니다." onclick="pauseAutoClose()" onfocus="pauseAutoClose()"></textarea>
+    <label for="notes">비고 (특이사항)</label>
+    <textarea id="notes" rows="2" placeholder="사유 작성 시 창 자동 닫힘이 멈춥니다." onclick="pauseAutoClose()" onfocus="pauseAutoClose()"></textarea>
   </div>
 
   <div class="btn-group">
@@ -162,7 +162,7 @@
 </div>
 
 <script>
-  // ⚠️ 본인의 최신 구글 웹앱 URL을 입력하세요.
+  // ⚠️ 본인의 구글 웹앱 URL 확인
   const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwcSTmTbdTmI-zxjqQuLPRytRm3Qbt4QS4ymGRCMmEx1P3LLtwpvzdJm_KwujwNZdft/exec";
 
   let userIp = "-";
@@ -194,87 +194,109 @@
     return new Date().toISOString().split('T')[0];
   }
 
-  // 비고란 클릭 시 창 자동 닫힘 즉시 중지 (창 유지)
   function pauseAutoClose() {
     if (autoCloseTimer) clearTimeout(autoCloseTimer);
     if (countdownInterval) clearInterval(countdownInterval);
     document.getElementById("noticeModal").style.display = "none";
   }
 
-  // 창 3초 후 닫기 실행 함수
   function startAutoClose(htmlMsg, seconds) {
-    pauseAutoClose(); // 기존 타이머 초기화
+    pauseAutoClose();
 
     const modal = document.getElementById("noticeModal");
     const toastTitle = document.getElementById("toastTitle");
     const countEl = document.getElementById("countdown");
     
-    toastTitle.innerHTML = htmlMsg;
-    let sec = seconds;
-    countEl.innerText = sec;
-    modal.style.display = "flex";
+    if (modal && toastTitle && countEl) {
+      toastTitle.innerHTML = htmlMsg;
+      let sec = seconds;
+      countEl.innerText = sec;
+      modal.style.display = "flex";
 
-    countdownInterval = setInterval(() => {
-      sec--;
-      if (sec > 0) {
-        countEl.innerText = sec;
-      } else {
-        clearInterval(countdownInterval);
-      }
-    }, 1000);
+      countdownInterval = setInterval(() => {
+        sec--;
+        if (sec > 0) {
+          countEl.innerText = sec;
+        } else {
+          clearInterval(countdownInterval);
+        }
+      }, 1000);
+    }
 
     autoCloseTimer = setTimeout(() => {
-      window.close(); // 브라우저 창 닫기
-      modal.style.display = "none";
+      window.close();
+      setTimeout(() => {
+        window.open('', '_self', '');
+        window.close();
+      }, 100);
     }, seconds * 1000);
   }
 
-  // 페이지 접속 시 시각 기반 자동 출/퇴근 처리
+  // 시스템 자동 로직 (재부팅 복구 및 3회 제한 기능 포함)
   async function initAutoAttendance() {
+    const nameInput = document.getElementById("userName");
     const savedName = localStorage.getItem("lastUserName");
-    if (savedName) document.getElementById("userName").value = savedName;
 
-    const userName = document.getElementById("userName").value.trim();
-    if (!userName) return;
+    if (savedName) {
+      nameInput.value = savedName;
+    } else {
+      return;
+    }
 
+    const userName = savedName.trim();
     const todayStr = getTodayStr();
     const savedStatus = localStorage.getItem(`attendance_${userName}_${todayStr}`);
-    const now = new Date();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-    const timeInMinutes = hours * 60 + minutes;
-
-    const btnIn = document.getElementById("btnCheckIn");
     
-    // 1. 이미 출근/퇴근 완료 상태인 경우: 3초 후 창 닫기
+    // 당일 재등록 횟수 카운터 조회
+    const retryKey = `retryCount_${userName}_${todayStr}`;
+    let retryCount = parseInt(localStorage.getItem(retryKey) || "0", 10);
+
+    const now = new Date();
+    const timeInMinutes = now.getHours() * 60 + now.getMinutes();
+    const btnIn = document.getElementById("btnCheckIn");
+
+    // 1. 이미 출근 기록이 존재하는 경우 (재부팅 감지 처리)
     if (savedStatus === "checkedIn" || savedStatus === "completed") {
       btnIn.disabled = true;
       btnIn.innerText = "☀️ 출근 완료됨";
 
-      // 오후 5시 20분(17:20 = 1040분) 이후 접속 시 자동 퇴근 처리
+      // 17:20(1040분) 이후 접속 시 퇴근 미완료 상태면 자동 퇴근
       if (timeInMinutes >= 1040 && savedStatus !== "completed") {
         await sendAttendance('checkOut', true);
+        return;
+      }
+
+      // PC 재부팅 등으로 다시 켜졌을 때 최대 3회까지 자동 재등록 처리
+      if (retryCount < 3) {
+        retryCount++;
+        localStorage.setItem(retryKey, retryCount.toString());
+        
+        // 재부팅 복구 표기와 함께 백엔드 전송
+        document.getElementById("notes").value = `[시스템 자동 복구 #${retryCount}] PC 재부팅 후 출근 확인`;
+        await sendAttendance('checkIn', true);
       } else {
-        startAutoClose("<span style='color:#007bff;'>ℹ️ 이미 출근 처리된 상태입니다.</span>", 3);
+        // 3회 초과 시 메시지 표출 후 3초 뒤 창 자동 닫기
+        startAutoClose("<span style='color:#007bff;'>ℹ️ 출근 완료 상태입니다.<br><small style='font-size:12px; color:#666;'>(당일 자동 재등록 제한 횟수 3회 도달)</small></span>", 3);
       }
       return;
     }
 
-    // 2. 오전 7시(07:00 = 420분) 이후 접속 시 아직 출근 전이면 자동 출근 처리
+    // 2. 최초 07:00(420분) 이후 접속 시 자동 출근
     if (timeInMinutes >= 420 && !savedStatus) {
       await sendAttendance('checkIn', true);
     }
   }
 
   document.getElementById("userName").addEventListener("input", function() {
-    localStorage.setItem("lastUserName", this.value.trim());
+    const name = this.value.trim();
+    if (name) localStorage.setItem("lastUserName", name);
   });
 
   window.addEventListener("DOMContentLoaded", () => {
     initAutoAttendance();
   });
 
-  // 출퇴근 등록
+  // 출퇴근 처리 함수
   async function sendAttendance(actionType, isAuto = false) {
     const userName = document.getElementById("userName").value.trim();
     const notes = document.getElementById("notes").value.trim();
@@ -286,6 +308,7 @@
       return;
     }
 
+    localStorage.setItem("lastUserName", userName);
     btnIn.disabled = true;
     btnOut.disabled = true;
 
@@ -313,7 +336,7 @@
         } else {
           localStorage.setItem(`attendance_${userName}_${todayStr}`, "completed");
           btnOut.disabled = false;
-          startAutoClose("<span style='color:#dc3545;'>🌙 퇴근 기록이 정상 등록되었습니다!</span>", 3);
+          startAutoClose("<span style='color:#dc3545;'>🌙 퇴근 기록이 정상 등록되었습니다!</span>", 5);
         }
         document.getElementById("notes").value = "";
       } else {
@@ -338,7 +361,7 @@
     document.getElementById("outstationModal").style.display = "none";
   }
 
-  // 사외근무 사전 신청 제출
+  // 사외근무 제출
   async function submitOutstationRequest() {
     const name = document.getElementById("reqName").value.trim();
     const email = document.getElementById("reqEmail").value.trim();
