@@ -3,295 +3,219 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>사내 출퇴근 관리 시스템</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>사내 출퇴근 관리</title>
   <style>
-    body {
-      background-color: #f8f9fa;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      margin: 0;
-    }
-    .card-custom {
-      width: 100%;
-      max-width: 420px;
-      padding: 24px;
-      border-radius: 16px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-      background: #ffffff;
-      position: relative;
-    }
-    .status-badge {
-      font-size: 0.85rem;
-      padding: 8px 12px;
-      border-radius: 8px;
-    }
-    .timer-text {
-      font-size: 0.8rem;
-      color: #dc3545;
-      font-weight: bold;
-    }
+    * { box-sizing: border-box; font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f4f6f8; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+    .card { background: #ffffff; padding: 32px 28px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 420px; text-align: center; }
+    .title { font-size: 24px; font-weight: 700; color: #111; margin-bottom: 6px; }
+    .time-display { font-size: 14px; color: #666; margin-bottom: 12px; }
+    .status-msg { font-size: 13px; font-weight: 600; min-height: 20px; margin-bottom: 12px; }
+    .alert-box { padding: 12px; border-radius: 10px; font-weight: 600; font-size: 15px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .alert-box.success { background-color: #d1e7dd; color: #0f5132; }
+    .alert-box.info { background-color: #cff4fc; color: #055160; }
+    .form-group { text-align: left; margin-bottom: 18px; }
+    label { font-size: 14px; font-weight: 700; color: #222; display: block; margin-bottom: 8px; }
+    select, input[type="text"] { width: 100%; padding: 12px 14px; border: 1px solid #e1e4e8; border-radius: 10px; font-size: 15px; outline: none; transition: border 0.2s; }
+    select:focus, input[type="text"]:focus { border-color: #007bff; }
+    .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+    button { flex: 1; padding: 14px; font-size: 16px; font-weight: 700; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+    .btn-in { background-color: #007bff; color: white; }
+    .btn-out { background-color: #6c757d; color: white; }
+    button:disabled { background-color: #a0a5aa !important; color: #ffffff !important; cursor: not-allowed; }
   </style>
 </head>
 <body>
 
-<div class="card-custom text-center">
-  <h4 class="fw-bold mb-1">🏢 사내 출퇴근 관리</h4>
-  <div id="current-time" class="text-muted small mb-2">시간 확인 중...</div>
+  <div class="card">
+    <div class="title">🏢 사내 출퇴근 관리</div>
+    <div class="time-display" id="clock">2026. 11. 3. 오전 00:00:00</div>
+    <div class="status-msg" id="closeNotice"></div>
+    <div class="alert-box success" id="statusBox">✅ 출퇴근 정보를 확인하는 중...</div>
 
-  <!-- 3초 후 창 닫힘 안내 -->
-  <div id="close-timer" class="timer-text mb-2"></div>
-
-  <!-- 상태 안내 박스 -->
-  <div id="status-box" class="alert alert-secondary status-badge mb-3" role="alert">
-    사원명을 선택하면 자동 감지가 시작됩니다.
-  </div>
-
-  <div class="mb-3 text-start">
-    <label class="form-label fw-bold small">사원 선택</label>
-    <select id="user-select" class="form-select" onchange="saveUserName(this.value)">
-      <option value="">이름을 선택하세요</option>
-      <option value="신나래">신나래</option>
-      <option value="박경선">박경선</option>
-      <option value="최희원">최희원</option>
-      <option value="신홍지">신홍지</option>
-      <option value="배미희">배미희</option>
-      <option value="김청식">김청식</option>
-    </select>
-  </div>
-
-  <!-- 비고란: 마우스 호버 / 포커스 시 자동 닫힘 타이머 정지 -->
-  <div class="mb-3 text-start">
-    <label class="form-label fw-bold small">비고 (외근, 특이사항 기재)</label>
-    <input type="text" id="notes-input" class="form-control" placeholder="예: 외근, 지각 사유, 조퇴 등 입력" 
-           onmouseenter="stopAutoClose()" onfocus="stopAutoClose()">
-  </div>
-
-  <div class="row g-2 mb-2">
-    <div class="col-6">
-      <button id="btn-checkin" class="btn btn-primary w-100 py-2 fw-bold" onclick="manualSubmit('출근')">출근하기</button>
+    <div class="form-group">
+      <label for="userName">사원 선택</label>
+      <select id="userName" onchange="onUserSelect()">
+        <option value="신나래">신나래</option>
+        <option value="박경선">박경선</option>
+        <option value="최희원">최희원</option>
+        <option value="신홍지">신홍지</option>
+        <option value="배미희">배미희</option>
+        <option value="김청식">김청식</option>
+      </select>
     </div>
-    <div class="col-6">
-      <button id="btn-checkout" class="btn btn-secondary w-100 py-2 fw-bold" onclick="manualSubmit('퇴근')">퇴근하기</button>
+
+    <div class="form-group">
+      <label for="notes">비고 (외근, 특이사항 기재)</label>
+      <input type="text" id="notes" placeholder="예: 외근, 지각 사유, 조퇴 등 입력" onfocus="pauseAutoClose()" oninput="pauseAutoClose()">
+    </div>
+
+    <div class="btn-group">
+      <button class="btn-in" id="btnCheckIn" onclick="manualCheck('출근')">출근하기</button>
+      <button class="btn-out" id="btnCheckOut" onclick="manualCheck('퇴근')">퇴근하기</button>
     </div>
   </div>
-</div>
 
-<script>
-  // 📌 적용하신 Google Apps Script 웹앱 URL
-  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyi3xMwL6G71UvEOUbNzF7pdfe4vfrK4od2mAnk3LyTEyUHFBmKunEMyZFOBSoivcEF/exec";
+  <script>
+    // ⚠️ 본인의 Google Apps Script 배포 URL로 교체하세요.
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz2ahqmEFNj9brB1yUiEYhqlW0ICo-M9HvAur3YS48ko1gpulH9N1mYcQB-iZ7MuBQ8/exec";
 
-  let userIp = "확인중";
-  let userDevice = "PC";
-  let countdownTimer = null;
+    let closeTimer = null;
+    let autoClosePaused = false;
 
-  // 🇰🇷 한국 시간(KST, YYYY-MM-DD) 날짜 키 생성 함수 (365일 호환)
-  function getKstDateKey() {
-    const now = new Date();
-    const kstDate = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-    return "att_checkin_" + kstDate.toISOString().slice(0, 10);
-  }
-
-  function saveUserName(name) {
-    if (name) {
-      localStorage.setItem("attendance_user_name", name);
-      checkAndAutoProcess();
-    }
-  }
-
-  async function initApp() {
-    startClock();
-
-    const savedName = localStorage.getItem("attendance_user_name");
-    if (savedName) {
-      document.getElementById("user-select").value = savedName;
+    // 시계 및 자동 로직 초기화
+    function initApp() {
+      updateClock();
+      setInterval(updateClock, 1000);
+      checkUserStatus();
     }
 
-    try {
-      userDevice = /Mobi|Android|iPhone/i.test(navigator.userAgent) ? "모바일" : "PC";
-      const ipRes = await fetch("https://api.ipify.org?format=json");
-      if (ipRes.ok) {
-        const ipData = await ipRes.json();
-        userIp = ipData.ip;
+    function updateClock() {
+      const now = new Date();
+      document.getElementById("clock").innerText = now.toLocaleString("ko-KR");
+    }
+
+    // 마우스 대거나 비고란 작성 시 창 닫힘 일시 정지
+    function pauseAutoClose() {
+      if (!autoClosePaused) {
+        autoClosePaused = true;
+        if (closeTimer) clearInterval(closeTimer);
+        document.getElementById("closeNotice").style.color = "#0056b3";
+        document.getElementById("closeNotice").innerText = "✏️ 작성 중: 자동 닫힘이 정지되었습니다.";
       }
-    } catch (e) {
-      console.warn("IP 감지 생략:", e);
     }
 
-    checkAndAutoProcess();
-  }
+    // 사용자 선택/상태 체크
+    function checkUserStatus() {
+      const name = document.getElementById("userName").value;
+      const today = new Date().toISOString().split('T')[0];
+      
+      const inKey = `att_in_${name}_${today}`;
+      const outKey = `att_out_${name}_${today}`;
 
-  // ⏰ 출퇴근 자동 처리 및 3초 타이머 동작
-  function checkAndAutoProcess() {
-    const userName = document.getElementById("user-select").value;
-    const statusBox = document.getElementById("status-box");
-    const btnCheckin = document.getElementById("btn-checkin");
+      const hasCheckedIn = localStorage.getItem(inKey);
+      const hasCheckedOut = localStorage.getItem(outKey);
 
-    if (!userName) {
-      statusBox.className = "alert alert-warning status-badge mb-3";
-      statusBox.innerText = "⚠️ 사원명을 선택하면 자동 처리가 활성화됩니다.";
-      btnCheckin.disabled = false;
-      return;
-    }
+      const btnIn = document.getElementById("btnCheckIn");
+      const btnOut = document.getElementById("btnCheckOut");
+      const statusBox = document.getElementById("statusBox");
 
-    const todayKey = getKstDateKey();
-    const isCheckedInToday = localStorage.getItem(todayKey);
-
-    if (isCheckedInToday) {
-      btnCheckin.disabled = true;
-      btnCheckin.classList.replace("btn-primary", "btn-secondary");
-      btnCheckin.innerText = "출근 완료됨";
-    } else {
-      btnCheckin.disabled = false;
-      btnCheckin.classList.replace("btn-secondary", "btn-primary");
-      btnCheckin.innerText = "출근하기";
-    }
-
-    const currentHour = new Date().getHours();
-
-    // 1) 출근 시간대 (오전 7시 ~ 오후 5시 미만)
-    if (currentHour >= 7 && currentHour < 17) {
-      if (!isCheckedInToday) {
-        sendData("출근", "");
-        localStorage.setItem(todayKey, "true");
-        btnCheckin.disabled = true;
-        btnCheckin.classList.replace("btn-primary", "btn-secondary");
-        btnCheckin.innerText = "출근 완료됨";
-        statusBox.className = "alert alert-success status-badge mb-3";
-        statusBox.innerText = "✅ " + userName + "님 자동 출근 완료!";
+      // 출근 버튼 상태 제어
+      if (hasCheckedIn) {
+        btnIn.innerText = "출근 완료됨";
+        btnIn.disabled = true;
       } else {
-        statusBox.className = "alert alert-info status-badge mb-3";
-        statusBox.innerText = "ℹ️ " + userName + "님 오늘 출근 기록 완료됨";
+        btnIn.innerText = "출근하기";
+        btnIn.disabled = false;
       }
-      // 📌 출근 확인 후 3초 타이머 후 창 닫기
-      startAutoClose(3);
-    } 
-    // 2) 퇴근 시간대 (오후 5시 이후)
-    else if (currentHour >= 17) {
-      statusBox.className = "alert alert-primary status-badge mb-3";
-      statusBox.innerText = "🌙 오후 5시 이후: PC 종료 시 자동 퇴근 처리됩니다.";
-    }
-  }
 
-  // ⏳ N초 카운트다운 후 창 자동 닫기
-  function startAutoClose(seconds = 3) {
-    stopAutoClose();
-    let secondsLeft = seconds;
-    const timerElem = document.getElementById("close-timer");
-    
-    timerElem.innerText = "⏱️ " + secondsLeft + "초 후 창이 자동으로 닫힙니다.";
-
-    countdownTimer = setInterval(() => {
-      secondsLeft--;
-      if (secondsLeft > 0) {
-        timerElem.innerText = "⏱️ " + secondsLeft + "초 후 창이 자동으로 닫힙니다.";
+      // 퇴근 버튼 상태 제어
+      if (hasCheckedOut) {
+        btnOut.innerText = "퇴근 완료됨";
+        btnOut.disabled = true;
       } else {
-        clearInterval(countdownTimer);
-        timerElem.innerText = "창을 닫는 중...";
-        window.close();
+        btnOut.innerText = "퇴근하기";
+        btnOut.disabled = false;
       }
-    }, 1000);
-  }
 
-  // 🛑 입력 중 자동 닫힘 타이머 정지
-  function stopAutoClose() {
-    if (countdownTimer) clearInterval(countdownTimer);
-    const timerElem = document.getElementById("close-timer");
-    if (timerElem) {
-      timerElem.innerText = "✏️ 작성 중: 자동 닫힘이 정지되었습니다.";
-      timerElem.style.color = "#0d6efd";
-    }
-  }
+      // 시간 기준 자동 출/퇴근 체크 (PC 부팅/종료 시)
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      const timeVal = hours * 100 + minutes;
 
-  // 🖱️ 버튼 클릭을 통한 수동 제출
-  function manualSubmit(type) {
-    stopAutoClose();
-    const userName = document.getElementById("user-select").value;
-    const notes = document.getElementById("notes-input").value;
-
-    if (!userName) {
-      alert("사원 이름을 선택해 주세요.");
-      return;
-    }
-
-    sendData(type, notes);
-
-    if (type === "출근") {
-      const todayKey = getKstDateKey();
-      localStorage.setItem(todayKey, "true");
-      const btnCheckin = document.getElementById("btn-checkin");
-      btnCheckin.disabled = true;
-      btnCheckin.classList.replace("btn-primary", "btn-secondary");
-      btnCheckin.innerText = "출근 완료됨";
-    }
-
-    alert(userName + "님 " + type + " 처리(비고: " + (notes || "없음") + ")가 완료되었습니다.");
-    document.getElementById("notes-input").value = "";
-    
-    startAutoClose(3);
-  }
-
-  // 📡 데이터 전송 (fetch + sendBeacon 보완 적용)
-  function sendData(type, notes) {
-    const userName = document.getElementById("user-select").value;
-    if (!userName) return;
-
-    const notesValue = notes !== undefined ? notes : document.getElementById("notes-input").value;
-
-    const payload = JSON.stringify({
-      userName: userName,
-      type: type,
-      notes: notesValue,
-      ip: userIp,
-      device: userDevice
-    });
-
-    // 일반 웹 페이지 열림 상태일 때 신뢰성이 더 높은 fetch 우선 사용
-    fetch(GOOGLE_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: payload
-    }).catch(() => {
-      // fetch 실패 시 sendBeacon 백업
-      if (navigator.sendBeacon) {
-        const blob = new Blob([payload], { type: 'text/plain;charset=utf-8' });
-        navigator.sendBeacon(GOOGLE_SCRIPT_URL, blob);
-      }
-    });
-  }
-
-  function startClock() {
-    setInterval(() => {
-      document.getElementById("current-time").innerText = new Date().toLocaleString('ko-KR');
-    }, 1000);
-  }
-
-  // 🛑 PC 종료 / 창 파괴 시 백그라운드 자동 퇴근 전송
-  window.addEventListener("pagehide", function (event) {
-    const userName = document.getElementById("user-select").value;
-    const currentHour = new Date().getHours();
-    const notes = document.getElementById("notes-input").value;
-
-    if (userName && currentHour >= 17) {
-      const payload = JSON.stringify({
-        userName: userName,
-        type: "퇴근",
-        notes: notes || "PC 종료 자동 퇴근",
-        ip: userIp,
-        device: userDevice
-      });
-      if (navigator.sendBeacon) {
-        const blob = new Blob([payload], { type: 'text/plain;charset=utf-8' });
-        navigator.sendBeacon(GOOGLE_SCRIPT_URL, blob);
+      // 1. 오전 7:00 이후 출근 미완료 시 자동 출근
+      if (timeVal >= 700 && timeVal < 1720 && !hasCheckedIn) {
+        statusBox.className = "alert-box success";
+        statusBox.innerText = `✅ ${name}님 자동 출근 완료!`;
+        sendAttendance(name, "출근", 3);
+      } 
+      // 2. 오후 5:20 (17:20) 이후 퇴근 미완료 시 자동 퇴근
+      else if (timeVal >= 1720 && !hasCheckedOut) {
+        statusBox.className = "alert-box info";
+        statusBox.innerText = `🌙 ${name}님 자동 퇴근 완료!`;
+        sendAttendance(name, "퇴근", 5);
+      } 
+      // 이미 체크된 상태
+      else if (hasCheckedIn && !hasCheckedOut) {
+        statusBox.className = "alert-box info";
+        statusBox.innerText = `ℹ️ ${name}님 오늘 출근 기록 완료됨`;
+        startCountdown(3);
+      } else if (hasCheckedOut) {
+        statusBox.className = "alert-box info";
+        statusBox.innerText = `ℹ️ ${name}님 오늘 출퇴근 기록 완료됨`;
+        startCountdown(5);
       }
     }
-  });
 
-  window.onload = initApp;
-</script>
+    function onUserSelect() {
+      if (closeTimer) clearInterval(closeTimer);
+      autoClosePaused = false;
+      document.getElementById("closeNotice").innerText = "";
+      checkUserStatus();
+    }
 
+    // 수동 출퇴근 버튼 클릭
+    function manualCheck(type) {
+      const name = document.getElementById("userName").value;
+      const sec = (type === "출근") ? 3 : 5;
+      sendAttendance(name, type, sec);
+    }
+
+    // Google Apps Script로 전송
+    function sendAttendance(name, type, countdownSec) {
+      const today = new Date().toISOString().split('T')[0];
+      const key = (type === "출근") ? `att_in_${name}_${today}` : `att_out_${name}_${today}`;
+      
+      // 중복 방지 저장
+      localStorage.setItem(key, new Date().toLocaleTimeString("ko-KR"));
+
+      const notes = document.getElementById("notes").value;
+      const payload = {
+        userName: name,
+        type: type,
+        notes: notes,
+        device: "PC Chrome"
+      };
+
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }).then(() => {
+        checkUserStatus();
+        startCountdown(countdownSec);
+      }).catch(err => console.error("전송 오류:", err));
+    }
+
+    // 카운트다운 및 자동 창 닫기
+    function startCountdown(seconds) {
+      if (autoClosePaused) return;
+      
+      let left = seconds;
+      const notice = document.getElementById("closeNotice");
+      notice.style.color = "#007bff";
+      notice.innerText = `${left}초 후 창을 닫는 중...`;
+
+      if (closeTimer) clearInterval(closeTimer);
+
+      closeTimer = setInterval(() => {
+        if (autoClosePaused) {
+          clearInterval(closeTimer);
+          return;
+        }
+        left--;
+        if (left > 0) {
+          notice.innerText = `${left}초 후 창을 닫는 중...`;
+        } else {
+          clearInterval(closeTimer);
+          window.close();
+        }
+      }, 1000);
+    }
+
+    window.onload = initApp;
+  </script>
 </body>
 </html>
