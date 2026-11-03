@@ -16,12 +16,10 @@
     .alert-box.info { background-color: #cff4fc; color: #055160; }
     .form-group { text-align: left; margin-bottom: 18px; }
     label { font-size: 14px; font-weight: 700; color: #222; display: block; margin-bottom: 8px; }
-    .input-row { display: flex; gap: 8px; }
     input[type="text"] { width: 100%; padding: 12px 14px; border: 1px solid #e1e4e8; border-radius: 10px; font-size: 15px; outline: none; transition: border 0.2s; }
     input[type="text"]:focus { border-color: #007bff; }
-    .btn-save { background: #495057; color: #fff; border: none; padding: 0 16px; border-radius: 10px; font-weight: bold; cursor: pointer; white-space: nowrap; }
     .btn-group { display: flex; gap: 10px; margin-top: 10px; }
-    button.action-btn { flex: 1; padding: 14px; font-size: 16px; font-weight: 700; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+    button { flex: 1; padding: 14px; font-size: 16px; font-weight: 700; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
     .btn-in { background-color: #007bff; color: white; }
     .btn-out { background-color: #6c757d; color: white; }
     button:disabled { background-color: #a0a5aa !important; color: #ffffff !important; cursor: not-allowed; }
@@ -36,21 +34,18 @@
     <div class="alert-box success" id="statusBox">✅ 상태 확인 중...</div>
 
     <div class="form-group">
-      <label for="name">사원 성명</label>
-      <div class="input-row">
-        <input type="text" id="name" placeholder="성함을 입력하세요 (예: 김청식)" onfocus="pauseAutoClose()" oninput="pauseAutoClose()">
-        <button type="button" class="btn-save" onclick="saveNameManually()">저장</button>
-      </div>
+      <label for="userName">이름</label>
+      <input type="text" id="userName" placeholder="성함을 입력하세요" autocomplete="off" oninput="onNameChange()" onfocus="pauseAutoClose()">
     </div>
 
     <div class="form-group">
-      <label for="note">비고 (외근, 특이사항 기재)</label>
-      <input type="text" id="note" placeholder="예: 외근, 지각 사유, 조퇴 등 입력" onfocus="pauseAutoClose()" oninput="pauseAutoClose()">
+      <label for="notes">비고 (외근, 특이사항 기재)</label>
+      <input type="text" id="notes" placeholder="예: 외근, 지각 사유, 조퇴 등 입력" onfocus="pauseAutoClose()" oninput="pauseAutoClose()">
     </div>
 
     <div class="btn-group">
-      <button class="action-btn btn-in" id="btnCheckIn" onclick="manualCheck('checkIn')">출근하기</button>
-      <button class="action-btn btn-out" id="btnCheckOut" onclick="manualCheck('checkOut')">퇴근하기</button>
+      <button class="btn-in" id="btnCheckIn" onclick="manualCheck('checkIn')">출근하기</button>
+      <button class="btn-out" id="btnCheckOut" onclick="manualCheck('checkOut')">퇴근하기</button>
     </div>
   </div>
 
@@ -71,12 +66,13 @@
       updateClock();
       setInterval(updateClock, 1000);
       
-      // LocalStorage에 저장된 사용자 이름 로드
-      const savedName = localStorage.getItem("att_user_name");
+      // 기기에 저장된 사원명 복원
+      const savedName = localStorage.getItem("att_saved_name") || "";
+      const nameInput = document.getElementById("userName");
       if (savedName) {
-        document.getElementById("name").value = savedName;
+        nameInput.value = savedName;
       }
-      
+
       checkUserStatus();
     }
 
@@ -85,14 +81,11 @@
       document.getElementById("clock").innerText = now.toLocaleString("ko-KR");
     }
 
-    function saveNameManually() {
-      const nameVal = document.getElementById("name").value.trim();
-      if (!nameVal) {
-        alert("성함을 입력해 주세요.");
-        return;
+    function onNameChange() {
+      const name = document.getElementById("userName").value.trim();
+      if (name) {
+        localStorage.setItem("att_saved_name", name);
       }
-      localStorage.setItem("att_user_name", nameVal);
-      alert(`"${nameVal}" 이름이 저장되었습니다.`);
       checkUserStatus();
     }
 
@@ -107,17 +100,20 @@
     }
 
     function checkUserStatus() {
-      const name = document.getElementById("name").value.trim();
-      
-      // 이름이 아직 등록되지 않은 경우 처리 정지
+      const name = document.getElementById("userName").value.trim();
+      const statusBox = document.getElementById("statusBox");
+      const btnIn = document.getElementById("btnCheckIn");
+      const btnOut = document.getElementById("btnCheckOut");
+
       if (!name) {
-        document.getElementById("statusBox").className = "alert-box info";
-        document.getElementById("statusBox").innerText = "⚠️ 사원 성명을 입력해 주세요.";
+        statusBox.className = "alert-box info";
+        statusBox.innerText = "⚠️ 성함을 입력해 주세요.";
+        btnIn.innerText = "출근하기";
+        btnIn.disabled = false;
+        btnOut.innerText = "퇴근하기";
+        btnOut.disabled = false;
         return;
       }
-
-      // 입력된 이름을 자동 저장
-      localStorage.setItem("att_user_name", name);
 
       const today = new Date().toISOString().split('T')[0];
       const inKey = `att_in_${name}_${today}`;
@@ -126,10 +122,7 @@
       const hasCheckedIn = localStorage.getItem(inKey);
       const hasCheckedOut = localStorage.getItem(outKey);
 
-      const btnIn = document.getElementById("btnCheckIn");
-      const btnOut = document.getElementById("btnCheckOut");
-      const statusBox = document.getElementById("statusBox");
-
+      // 출근 버튼 상태
       if (hasCheckedIn) {
         btnIn.innerText = "출근 완료됨";
         btnIn.disabled = true;
@@ -138,6 +131,7 @@
         btnIn.disabled = false;
       }
 
+      // 퇴근 버튼 상태
       if (hasCheckedOut) {
         btnOut.innerText = "퇴근 완료됨";
         btnOut.disabled = true;
@@ -151,19 +145,16 @@
       const minutes = now.getMinutes();
       const timeVal = hours * 100 + minutes;
 
-      // 1. 오전 7:00 이후 출근 미완료 시 자동 출근 (3초 후 닫힘)
+      // 자동 체크 및 카운트다운
       if (timeVal >= 700 && timeVal < 1720 && !hasCheckedIn) {
         statusBox.className = "alert-box success";
         statusBox.innerText = `✅ ${name}님 자동 출근 완료!`;
         submitAttendance('checkIn', 3);
-      } 
-      // 2. 오후 5:20 (17:20) 이후 퇴근 미완료 시 자동 퇴근 (5초 후 닫힘)
-      else if (timeVal >= 1720 && !hasCheckedOut) {
+      } else if (timeVal >= 1720 && !hasCheckedOut) {
         statusBox.className = "alert-box info";
         statusBox.innerText = `🌙 ${name}님 자동 퇴근 완료!`;
         submitAttendance('checkOut', 5);
-      } 
-      else if (hasCheckedIn && !hasCheckedOut) {
+      } else if (hasCheckedIn && !hasCheckedOut) {
         statusBox.className = "alert-box info";
         statusBox.innerText = `ℹ️ ${name}님 오늘 출근 기록 완료됨`;
         startCountdown(3);
@@ -175,18 +166,19 @@
     }
 
     function manualCheck(action) {
-      const name = document.getElementById("name").value.trim();
+      const name = document.getElementById("userName").value.trim();
       if (!name) {
-        alert("성함을 먼저 입력해 주세요.");
+        alert("성함을 입력해 주세요.");
         return;
       }
+      localStorage.setItem("att_saved_name", name);
       const sec = (action === 'checkIn') ? 3 : 5;
       submitAttendance(action, sec);
     }
 
     function submitAttendance(action, countdownSec) {
-      const name = document.getElementById('name').value.trim();
-      const note = document.getElementById('note').value.trim();
+      const name = document.getElementById('userName').value.trim();
+      const notes = document.getElementById('notes').value.trim();
       const today = new Date().toISOString().split('T')[0];
       const key = (action === 'checkIn') ? `att_in_${name}_${today}` : `att_out_${name}_${today}`;
       
@@ -195,7 +187,9 @@
       const payload = {
         action: action,
         name: name,
-        note: note,
+        userName: name,
+        note: notes,
+        notes: notes,
         ip: userIp,
         device: navigator.userAgent.includes('Mobile') ? '모바일' : 'PC Chrome'
       };
