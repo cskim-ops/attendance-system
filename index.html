@@ -35,7 +35,7 @@
 
     <div class="form-group">
       <label for="userName">이름</label>
-      <input type="text" id="userName" placeholder="성함을 입력하세요 (예: 김청식)" autocomplete="off">
+      <input type="text" id="userName" placeholder="성함을 입력하세요 (예: 홍길동)" autocomplete="off">
     </div>
 
     <div class="form-group">
@@ -50,11 +50,10 @@
   </div>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbziZ58_RO2MUiZGFfZQwWzQTANth6tWWXiT6FK1jzAlWFy8UrtMypWfB62JI747cFNR/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbw-i_EobxD2YW7gQNVdMhcbaL8079poye4Stb-2l5vgMmbFr3onc7AOTEVFySI5tCK8/exec";
 
     let userIp = "-";
 
-    // IP 수집
     fetch('https://api.ipify.org?format=json')
       .then(res => res.json())
       .then(data => userIp = data.ip)
@@ -64,10 +63,10 @@
       updateClock();
       setInterval(updateClock, 1000);
       
-      // 저장되어 있던 성함 로드 (타이핑 시 자동 전송 안 됨)
       const savedName = localStorage.getItem("att_saved_name") || "";
       if (savedName) {
         document.getElementById("userName").value = savedName;
+        checkDailyStatus(savedName);
       }
     }
 
@@ -76,7 +75,43 @@
       document.getElementById("clock").innerText = now.toLocaleString("ko-KR");
     }
 
-    // 📌 [출근하기] / [퇴근하기] 버튼을 직접 눌렀을 때만 기록 및 닫기 수행
+    // 📌 오늘 이미 출근/퇴근을 완료했는지 상태 확인 및 비활성화 처리
+    function checkDailyStatus(name) {
+      const today = new Date().toISOString().split('T')[0];
+      const inKey = `att_in_${name}_${today}`;
+      const outKey = `att_out_${name}_${today}`;
+
+      const hasCheckedIn = localStorage.getItem(inKey);
+      const hasCheckedOut = localStorage.getItem(outKey);
+
+      const btnIn = document.getElementById("btnCheckIn");
+      const btnOut = document.getElementById("btnCheckOut");
+      const statusBox = document.getElementById("statusBox");
+      const notice = document.getElementById("closeNotice");
+
+      if (hasCheckedIn) {
+        btnIn.innerText = "출근 완료됨";
+        btnIn.disabled = true;
+      }
+
+      if (hasCheckedOut) {
+        btnOut.innerText = "퇴근 완료됨";
+        btnOut.disabled = true;
+      }
+
+      // 이미 오늘 출근 및 퇴근이 완전히 끝난 경우 안내 후 창 자동 닫기
+      if (hasCheckedIn && hasCheckedOut) {
+        statusBox.className = "alert-box info";
+        statusBox.innerText = `ℹ️ ${name}님 오늘 출퇴근 기록 완료됨`;
+        notice.style.color = "#007bff";
+        notice.innerText = "1초 후 창이 닫힙니다...";
+        setTimeout(() => { window.close(); }, 1000);
+      } else if (hasCheckedIn) {
+        statusBox.className = "alert-box info";
+        statusBox.innerText = `ℹ️ ${name}님 오늘 출근 기록 완료됨`;
+      }
+    }
+
     function manualCheck(action) {
       const name = document.getElementById("userName").value.trim();
       if (!name) {
@@ -84,13 +119,11 @@
         return;
       }
 
-      // 작성한 이름 영구 보관
       localStorage.setItem("att_saved_name", name);
 
       const statusBox = document.getElementById("statusBox");
       const btnIn = document.getElementById("btnCheckIn");
       const btnOut = document.getElementById("btnCheckOut");
-      const notice = document.getElementById("closeNotice");
 
       btnIn.disabled = true;
       btnOut.disabled = true;
@@ -110,21 +143,26 @@
         device: navigator.userAgent.includes('Mobile') ? '모바일' : 'PC Chrome'
       };
 
-      // 구글 시트로 데이터 전송
       fetch(GAS_URL, {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(payload)
       }).then(() => {
-        finishAndClose(actionText);
+        finishAndClose(name, action, actionText);
       }).catch(err => {
         console.error("전송 오류:", err);
-        finishAndClose(actionText);
+        finishAndClose(name, action, actionText);
       });
     }
 
-    function finishAndClose(actionText) {
+    function finishAndClose(name, action, actionText) {
+      const today = new Date().toISOString().split('T')[0];
+      const key = (action === 'checkIn') ? `att_in_${name}_${today}` : `att_out_${name}_${today}`;
+      
+      // 오늘 기록 로컬스토리지에 저장
+      localStorage.setItem(key, new Date().toLocaleTimeString("ko-KR"));
+
       const notice = document.getElementById("closeNotice");
       const statusBox = document.getElementById("statusBox");
 
@@ -132,7 +170,6 @@
       notice.style.color = "#007bff";
       notice.innerText = "1초 후 창이 닫힙니다...";
 
-      // 1초 뒤 자동 창 닫기
       setTimeout(() => {
         window.close();
         setTimeout(() => {
