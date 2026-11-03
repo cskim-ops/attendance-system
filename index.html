@@ -65,6 +65,7 @@
     .btn-in:disabled { background-color: #6c757d; cursor: not-allowed; opacity: 0.6; }
     .btn-out { background-color: #dc3545; }
     .btn-out:hover { background-color: #c82333; }
+    .btn-out:disabled { background-color: #6c757d; cursor: not-allowed; opacity: 0.6; }
     .btn-outstation {
       width: 100%;
       background-color: #6c757d;
@@ -99,7 +100,7 @@
     }
     .btn-modal-cancel { background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
     .btn-modal-submit { background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-    .toast-msg { font-size: 16px; font-weight: bold; color: #28a745; margin-bottom: 10px; }
+    .toast-msg { font-size: 16px; font-weight: bold; margin-bottom: 10px; }
     .timer-sec { font-size: 13px; color: #777; }
   </style>
 </head>
@@ -126,10 +127,10 @@
   <button class="btn btn-outstation" onclick="openOutstationModal()">📝 사외근무 / 직퇴 사전 신청</button>
 </div>
 
-<!-- 3초 후 자동 닫힘 출근 완료 안내 팝업 -->
+<!-- 출퇴근 자동 닫힘 안내 팝업 -->
 <div id="noticeModal" class="modal-overlay">
   <div class="modal-content">
-    <div class="toast-msg">✅ 출근 기록이 정상 등록되었습니다!</div>
+    <div id="toastTitle" class="toast-msg"></div>
     <div class="timer-sec"><span id="countdown">3</span>초 후 창이 자동으로 닫힙니다.</div>
   </div>
 </div>
@@ -158,8 +159,8 @@
 </div>
 
 <script>
-  // ⚠️ 본인의 구글 웹앱 URL 확인
-  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzb90zCJvs9ea5dP8k0a4dYX5Cys_f1OcP-PKUfri4Cw9vG1RLHvPO12nhNqDlwIc0K/exec";
+  // ⚠️ 배포하신 구글 웹앱 URL을 정확하게 입력해 주세요.
+  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwcSTmTbdTmI-zxjqQuLPRytRm3Qbt4QS4ymGRCMmEx1P3LLtwpvzdJm_KwujwNZdft/exec";
 
   let userIp = "-";
   async function fetchIp() {
@@ -173,17 +174,23 @@
   }
   fetchIp();
 
+  // 디바이스 표기 개선 (Win32 대신 Windows / Mac / Android / iOS 명확히 기재)
   function getDeviceInfo() {
     const ua = navigator.userAgent;
-    if (/mobile/i.test(ua)) return "Mobile (" + (navigator.platform || "Unknown") + ")";
-    return "Desktop (" + (navigator.platform || "Unknown") + ")";
+    let os = "Desktop";
+    if (/windows/i.test(ua)) os = "Desktop (Windows)";
+    else if (/macintosh|mac os x/i.test(ua)) os = "Desktop (Mac)";
+    else if (/android/i.test(ua)) os = "Mobile (Android)";
+    else if (/iphone|ipad|ipod/i.test(ua)) os = "Mobile (iOS)";
+    
+    return os;
   }
 
   function getTodayStr() {
     return new Date().toISOString().split('T')[0];
   }
 
-  // 당일 상태 체크 & PC 재부팅 후 상태 복원
+  // 출근 상태 체크 및 복원
   function checkDailyStatus() {
     const userName = document.getElementById("userName").value.trim();
     if (!userName) return;
@@ -214,11 +221,19 @@
     }
   });
 
-  // 3초 후 자동 닫힘 타이머
-  function showNoticeAndAutoClose() {
+  // 카운트다운 후 자동 닫힘 (출근: 3초 / 퇴근: 5초)
+  function showNoticeAndAutoClose(type, seconds) {
     const modal = document.getElementById("noticeModal");
+    const toastTitle = document.getElementById("toastTitle");
     const countEl = document.getElementById("countdown");
-    let sec = 3;
+    
+    if (type === 'checkIn') {
+      toastTitle.innerHTML = "<span style='color:#28a745;'>☀️ 출근 기록이 정상 등록되었습니다!</span>";
+    } else {
+      toastTitle.innerHTML = "<span style='color:#dc3545;'>🌙 퇴근 기록이 정상 등록되었습니다!</span>";
+    }
+
+    let sec = seconds;
     countEl.innerText = sec;
     modal.style.display = "flex";
 
@@ -233,15 +248,21 @@
     }, 1000);
   }
 
-  // 출퇴근 데이터 전송 (Append-Only)
+  // 출퇴근 등록 (전송 중 버튼 비활성화로 누락 방지)
   async function sendAttendance(actionType) {
     const userName = document.getElementById("userName").value.trim();
     const notes = document.getElementById("notes").value.trim();
+    const btnIn = document.getElementById("btnCheckIn");
+    const btnOut = document.getElementById("btnCheckOut");
 
     if (!userName) {
       alert("성함을 입력해 주세요.");
       return;
     }
+
+    // 통신 중 중복 클릭 및 PC 종료 시 오류 방지를 위해 버튼 잠금
+    btnIn.disabled = true;
+    btnOut.disabled = true;
 
     const payload = {
       action: actionType,
@@ -263,17 +284,22 @@
         if (actionType === 'checkIn') {
           localStorage.setItem(`attendance_${userName}_${todayStr}`, "checkedIn");
           checkDailyStatus();
-          showNoticeAndAutoClose(); // 3초 카운트다운 후 자동 닫힘
+          showNoticeAndAutoClose('checkIn', 3); // 출근 3초 후 닫힘
         } else {
-          alert("퇴근 기록이 정상 등록되었습니다. (필요 시 재등록 가능)");
           localStorage.setItem(`attendance_${userName}_${todayStr}`, "completed");
+          btnOut.disabled = false; // 퇴근은 재등록 가능하도록 다시 해제
+          showNoticeAndAutoClose('checkOut', 5); // 퇴근 5초 후 닫힘
         }
         document.getElementById("notes").value = "";
       } else {
         alert("등록 중 오류가 발생했습니다: " + resultText);
+        btnOut.disabled = false;
+        checkDailyStatus();
       }
     } catch (err) {
-      alert("서버 통신 오류가 발생했습니다. 구글 앱스 스크립트 URL을 확인해 주세요.");
+      alert("서버 통신 오류가 발생했습니다. 전송을 다시 시도해 주세요.");
+      btnOut.disabled = false;
+      checkDailyStatus();
     }
   }
 
@@ -288,6 +314,7 @@
     document.getElementById("outstationModal").style.display = "none";
   }
 
+  // 사외근무 사전 신청 제출
   async function submitOutstationRequest() {
     const name = document.getElementById("reqName").value.trim();
     const date = document.getElementById("reqDate").value;
