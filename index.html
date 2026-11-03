@@ -31,16 +31,16 @@
     <div class="title">🏢 사내 출퇴근 관리</div>
     <div class="time-display" id="clock">계산 중...</div>
     <div class="status-msg" id="closeNotice"></div>
-    <div class="alert-box success" id="statusBox">✅ 상태 확인 중...</div>
+    <div class="alert-box info" id="statusBox">성함을 입력한 후 출퇴근 버튼을 눌러주세요.</div>
 
     <div class="form-group">
       <label for="userName">이름</label>
-      <input type="text" id="userName" placeholder="성함을 입력하세요" autocomplete="off" oninput="onNameChange()" onfocus="pauseAutoClose()">
+      <input type="text" id="userName" placeholder="성함을 입력하세요 (예: 김청식)" autocomplete="off">
     </div>
 
     <div class="form-group">
       <label for="notes">비고 (외근, 특이사항 기재)</label>
-      <input type="text" id="notes" placeholder="예: 외근, 지각 사유, 조퇴 등 입력" onfocus="pauseAutoClose()" oninput="pauseAutoClose()">
+      <input type="text" id="notes" placeholder="예: 외근, 지각 사유, 조퇴 등 입력">
     </div>
 
     <div class="btn-group">
@@ -53,8 +53,6 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbziZ58_RO2MUiZGFfZQwWzQTANth6tWWXiT6FK1jzAlWFy8UrtMypWfB62JI747cFNR/exec";
 
     let userIp = "-";
-    let closeTimer = null;
-    let autoClosePaused = false;
 
     // IP 수집
     fetch('https://api.ipify.org?format=json')
@@ -66,13 +64,11 @@
       updateClock();
       setInterval(updateClock, 1000);
       
+      // 저장되어 있던 성함 로드 (타이핑 시 자동 전송 안 됨)
       const savedName = localStorage.getItem("att_saved_name") || "";
-      const nameInput = document.getElementById("userName");
       if (savedName) {
-        nameInput.value = savedName;
+        document.getElementById("userName").value = savedName;
       }
-
-      checkUserStatus();
     }
 
     function updateClock() {
@@ -80,108 +76,30 @@
       document.getElementById("clock").innerText = now.toLocaleString("ko-KR");
     }
 
-    function onNameChange() {
-      const name = document.getElementById("userName").value.trim();
-      if (name) {
-        localStorage.setItem("att_saved_name", name);
-      }
-      checkUserStatus();
-    }
-
-    function pauseAutoClose() {
-      if (!autoClosePaused) {
-        autoClosePaused = true;
-        if (closeTimer) clearInterval(closeTimer);
-        const notice = document.getElementById("closeNotice");
-        notice.style.color = "#0056b3";
-        notice.innerText = "✏️ 작성 중: 자동 닫힘이 정지되었습니다.";
-      }
-    }
-
-    function checkUserStatus() {
-      const name = document.getElementById("userName").value.trim();
-      const statusBox = document.getElementById("statusBox");
-      const btnIn = document.getElementById("btnCheckIn");
-      const btnOut = document.getElementById("btnCheckOut");
-
-      if (!name) {
-        statusBox.className = "alert-box info";
-        statusBox.innerText = "⚠️ 성함을 입력해 주세요.";
-        btnIn.innerText = "출근하기";
-        btnIn.disabled = false;
-        btnOut.innerText = "퇴근하기";
-        btnOut.disabled = false;
-        return;
-      }
-
-      const today = new Date().toISOString().split('T')[0];
-      const inKey = `att_in_${name}_${today}`;
-      const outKey = `att_out_${name}_${today}`;
-
-      const hasCheckedIn = localStorage.getItem(inKey);
-      const hasCheckedOut = localStorage.getItem(outKey);
-
-      if (hasCheckedIn) {
-        btnIn.innerText = "출근 완료됨";
-        btnIn.disabled = true;
-      } else {
-        btnIn.innerText = "출근하기";
-        btnIn.disabled = false;
-      }
-
-      if (hasCheckedOut) {
-        btnOut.innerText = "퇴근 완료됨";
-        btnOut.disabled = true;
-      } else {
-        btnOut.innerText = "퇴근하기";
-        btnOut.disabled = false;
-      }
-
-      const now = new Date();
-      const hours = now.getHours();
-      const minutes = now.getMinutes();
-      const timeVal = hours * 100 + minutes;
-
-      // 7시 이후 출근 미완료 시 자동 데이터 전송
-      if (timeVal >= 700 && timeVal < 1720 && !hasCheckedIn) {
-        statusBox.className = "alert-box success";
-        statusBox.innerText = `✅ ${name}님 자동 출근 전송 중...`;
-        submitAttendance('checkIn', 3);
-      } 
-      // 17시 20분 이후 퇴근 미완료 시 자동 데이터 전송
-      else if (timeVal >= 1720 && !hasCheckedOut) {
-        statusBox.className = "alert-box info";
-        statusBox.innerText = `🌙 ${name}님 자동 퇴근 전송 중...`;
-        submitAttendance('checkOut', 5);
-      } 
-      else if (hasCheckedIn && !hasCheckedOut) {
-        statusBox.className = "alert-box info";
-        statusBox.innerText = `ℹ️ ${name}님 오늘 출근 기록 완료됨`;
-        startCountdown(3);
-      } else if (hasCheckedOut) {
-        statusBox.className = "alert-box info";
-        statusBox.innerText = `ℹ️ ${name}님 오늘 출퇴근 기록 완료됨`;
-        startCountdown(5);
-      }
-    }
-
+    // 📌 [출근하기] / [퇴근하기] 버튼을 직접 눌렀을 때만 기록 및 닫기 수행
     function manualCheck(action) {
       const name = document.getElementById("userName").value.trim();
       if (!name) {
         alert("성함을 입력해 주세요.");
         return;
       }
+
+      // 작성한 이름 영구 보관
       localStorage.setItem("att_saved_name", name);
-      const sec = (action === 'checkIn') ? 3 : 5;
-      submitAttendance(action, sec);
-    }
 
-    function submitAttendance(action, countdownSec) {
-      const name = document.getElementById('userName').value.trim();
+      const statusBox = document.getElementById("statusBox");
+      const btnIn = document.getElementById("btnCheckIn");
+      const btnOut = document.getElementById("btnCheckOut");
+      const notice = document.getElementById("closeNotice");
+
+      btnIn.disabled = true;
+      btnOut.disabled = true;
+
+      const actionText = (action === 'checkIn') ? '출근' : '퇴근';
+      statusBox.className = "alert-box success";
+      statusBox.innerText = `✅ ${name}님 ${actionText} 처리 중...`;
+
       const notes = document.getElementById('notes').value.trim();
-      const today = new Date().toISOString().split('T')[0];
-      const key = (action === 'checkIn') ? `att_in_${name}_${today}` : `att_out_${name}_${today}`;
-
       const payload = {
         action: action,
         name: name,
@@ -192,53 +110,34 @@
         device: navigator.userAgent.includes('Mobile') ? '모바일' : 'PC Chrome'
       };
 
-      // 📌 구글 시트로 먼저 전송 시도
+      // 구글 시트로 데이터 전송
       fetch(GAS_URL, {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(payload)
       }).then(() => {
-        // 성공 시 Local Storage 저장
-        localStorage.setItem(key, new Date().toLocaleTimeString("ko-KR"));
-        checkUserStatus();
-        startCountdown(countdownSec);
+        finishAndClose(actionText);
       }).catch(err => {
         console.error("전송 오류:", err);
-        // 오류 발생 시에도 기록 후 카운트다운
-        localStorage.setItem(key, new Date().toLocaleTimeString("ko-KR"));
-        checkUserStatus();
-        startCountdown(countdownSec);
+        finishAndClose(actionText);
       });
     }
 
-    function startCountdown(seconds) {
-      if (autoClosePaused) return;
-      
-      let left = seconds;
+    function finishAndClose(actionText) {
       const notice = document.getElementById("closeNotice");
+      const statusBox = document.getElementById("statusBox");
+
+      statusBox.innerText = `✅ ${actionText} 기록 완료!`;
       notice.style.color = "#007bff";
-      notice.innerText = `${left}초 후 창을 닫는 중...`;
+      notice.innerText = "1초 후 창이 닫힙니다...";
 
-      if (closeTimer) clearInterval(closeTimer);
-
-      closeTimer = setInterval(() => {
-        if (autoClosePaused) {
-          clearInterval(closeTimer);
-          return;
-        }
-        left--;
-        if (left > 0) {
-          notice.innerText = `${left}초 후 창을 닫는 중...`;
-        } else {
-          clearInterval(closeTimer);
-          // 브라우저 닫기 시도 (스크립트로 열리지 않은 경우 닫히지 않는 브라우저 보안 이슈 대응)
-          window.close();
-          // window.close()가 차단될 경우 빈 화면 처리
-          setTimeout(() => {
-            notice.innerText = "✅ 기록 완료! 창을 닫으셔도 됩니다.";
-          }, 500);
-        }
+      // 1초 뒤 자동 창 닫기
+      setTimeout(() => {
+        window.close();
+        setTimeout(() => {
+          notice.innerText = "기록이 완료되었습니다. 이 창을 닫으셔도 좋습니다.";
+        }, 500);
       }, 1000);
     }
 
