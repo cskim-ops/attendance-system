@@ -50,7 +50,7 @@
   </div>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzVkeHVzPhPw2Wh_0qFESE3MuWNm5kV8XvbsNTtoFMUfLjhavvZigWCiCIqqPU_GrvC/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzQPSm3aFm7gIuo96CPxV_ZFsrDtw0d-OAzhl274Yii4jZrHfisWECkBdon6OJjjoLE/exec";
 
     let userIp = "-";
     let closeTimer = null;
@@ -78,7 +78,6 @@
       document.getElementById("clock").innerText = now.toLocaleString("ko-KR");
     }
 
-    // 비고란/이름 입력창 마우스 클릭 또는 작성 시 자동 닫힘 멈춤
     function pauseAutoClose() {
       isWriting = true;
       if (closeTimer) clearInterval(closeTimer);
@@ -87,7 +86,7 @@
       notice.innerText = "✏️ 작성 중: 자동 닫힘이 정지되었습니다.";
     }
 
-    // 📌 오늘 상태 점검 및 3초 자동 닫힘 로직
+    // 📌 오늘 상태 확인 및 버튼 상태 제어 (절전 모드에 의한 기습 자동 퇴근 제거)
     function checkDailyStatus(name) {
       const today = new Date().toISOString().split('T')[0];
       const inKey = `att_in_${name}_${today}`;
@@ -100,34 +99,35 @@
       const btnOut = document.getElementById("btnCheckOut");
       const statusBox = document.getElementById("statusBox");
 
+      // 출근 완료 시 출근 버튼만 비활성화
       if (hasCheckedIn) {
         btnIn.innerText = "출근 완료됨";
         btnIn.disabled = true;
       }
 
+      // 퇴근 완료 시 퇴근 버튼 비활성화
       if (hasCheckedOut) {
         btnOut.innerText = "퇴근 완료됨";
         btnOut.disabled = true;
+      } else {
+        // 출근했더라도 퇴근 전이고 재부팅된 경우: 퇴근 버튼은 상시 활성화 유지!
+        btnOut.innerText = "퇴근하기";
+        btnOut.disabled = false;
       }
 
-      // 1. 오늘 이미 출근 및 퇴근까지 모두 마쳤을 때
       if (hasCheckedIn && hasCheckedOut) {
         statusBox.className = "alert-box info";
         statusBox.innerText = `ℹ️ ${name}님 오늘 출퇴근 기록 완료됨`;
         startCountdown(3);
-      } 
-      // 2. 이미 출근을 마친 상태로 재접속했을 때 (퇴근 전)
-      else if (hasCheckedIn && !hasCheckedOut) {
+      } else if (hasCheckedIn && !hasCheckedOut) {
         statusBox.className = "alert-box info";
         statusBox.innerText = `ℹ️ ${name}님 오늘 출근 기록 완료됨`;
-        // 비고란을 작성 중이 아닐 때만 3초 카운트다운 시작
         if (!isWriting) {
           startCountdown(3);
         }
       }
     }
 
-    // 3초 카운트다운 실행 함수
     function startCountdown(seconds) {
       if (isWriting) return;
 
@@ -156,7 +156,6 @@
       }, 1000);
     }
 
-    // 📌 수동 출근/퇴근 버튼 클릭
     function manualCheck(action) {
       const name = document.getElementById("userName").value.trim();
       if (!name) {
@@ -170,7 +169,6 @@
       const btnIn = document.getElementById("btnCheckIn");
       const btnOut = document.getElementById("btnCheckOut");
 
-      // 중복 클릭 방지 (즉시 버튼 비활성화)
       btnIn.disabled = true;
       btnOut.disabled = true;
 
@@ -189,7 +187,6 @@
         device: navigator.userAgent.includes('Mobile') ? '모바일' : 'PC Chrome'
       };
 
-      // 구글 시트로 데이터 전송
       fetch(GAS_URL, {
         method: 'POST',
         mode: 'no-cors',
@@ -207,7 +204,6 @@
       const today = new Date().toISOString().split('T')[0];
       const key = (action === 'checkIn') ? `att_in_${name}_${today}` : `att_out_${name}_${today}`;
       
-      // 오늘 처리 내역 브라우저에 저장
       localStorage.setItem(key, new Date().toLocaleTimeString("ko-KR"));
 
       const notice = document.getElementById("closeNotice");
@@ -217,7 +213,6 @@
       notice.style.color = "#007bff";
       notice.innerText = "1초 후 창이 닫힙니다...";
 
-      // 전송 성공 후 1초 뒤 창 닫기
       setTimeout(() => {
         window.close();
         setTimeout(() => {
@@ -225,6 +220,36 @@
         }, 500);
       }, 1000);
     }
+
+    // 📌 PC 종료/창 닫기 감지 시 자동 퇴근 처리 (17:00 이후일 때만 작동)
+    window.addEventListener("pagehide", function() {
+      const name = document.getElementById("userName").value.trim();
+      if (!name) return;
+
+      const now = new Date();
+      const hours = now.getHours();
+      const today = new Date().toISOString().split('T')[0];
+      const inKey = `att_in_${name}_${today}`;
+      const outKey = `att_out_${name}_${today}`;
+
+      // 출근을 한 상태이고, 퇴근 기록이 없으며, 오후 5시(17시) 이후일 때 PC를 끄면 자동 퇴근
+      if (localStorage.getItem(inKey) && !localStorage.getItem(outKey) && hours >= 17) {
+        localStorage.setItem(outKey, now.toLocaleTimeString("ko-KR"));
+
+        const payload = {
+          action: 'checkOut',
+          name: name,
+          userName: name,
+          note: 'PC 종료 자동 퇴근',
+          notes: 'PC 종료 자동 퇴근',
+          ip: userIp,
+          device: 'PC Chrome'
+        };
+
+        // 브라우저 종료 시에도 비동기로 데이터 보장 전달
+        navigator.sendBeacon(GAS_URL, JSON.stringify(payload));
+      }
+    });
 
     window.onload = initApp;
   </script>
