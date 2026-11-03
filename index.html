@@ -72,7 +72,7 @@
     }
     .btn-outstation:hover { background-color: #5a6268; }
 
-    /* Modal Style */
+    /* 알림 & 모달 팝업 스타일 */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -89,6 +89,7 @@
       width: 90%;
       max-width: 420px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      text-align: center;
     }
     .modal-actions {
       display: flex;
@@ -98,6 +99,8 @@
     }
     .btn-modal-cancel { background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
     .btn-modal-submit { background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    .toast-msg { font-size: 16px; font-weight: bold; color: #28a745; margin-bottom: 10px; }
+    .timer-sec { font-size: 13px; color: #777; }
   </style>
 </head>
 <body>
@@ -107,7 +110,7 @@
 
   <div class="form-group">
     <label for="userName">성함</label>
-    <input type="text" id="userName" placeholder="성함을 입력하세요 (예: 홍길동)" onchange="checkDailyStatus()">
+    <input type="text" id="userName" placeholder="성함을 입력하세요 (예: 홍길동)">
   </div>
 
   <div class="form-group">
@@ -123,9 +126,17 @@
   <button class="btn btn-outstation" onclick="openOutstationModal()">📝 사외근무 / 직퇴 사전 신청</button>
 </div>
 
+<!-- 3초 후 자동 닫힘 출근 완료 안내 팝업 -->
+<div id="noticeModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="toast-msg">✅ 출근 기록이 정상 등록되었습니다!</div>
+    <div class="timer-sec"><span id="countdown">3</span>초 후 창이 자동으로 닫힙니다.</div>
+  </div>
+</div>
+
 <!-- 사외근무 사전 신청 모달 팝업 -->
-<div id="outstationModal" class="modal-overlay" onclick="handleOverlayClick(event)">
-  <div class="modal-content" onclick="event.stopPropagation()">
+<div id="outstationModal" class="modal-overlay">
+  <div class="modal-content" style="text-align: left;">
     <h3 style="margin-top:0; color:#2c3e50;">사외근무(직퇴) 사전 신청</h3>
     <div class="form-group">
       <label for="reqName">성함</label>
@@ -147,7 +158,7 @@
 </div>
 
 <script>
-  // ⚠️ 본인의 구글 웹앱 URL로 입력되어 있는지 확인하세요.
+  // ⚠️ 본인의 구글 웹앱 URL 확인
   const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzb90zCJvs9ea5dP8k0a4dYX5Cys_f1OcP-PKUfri4Cw9vG1RLHvPO12nhNqDlwIc0K/exec";
 
   let userIp = "-";
@@ -168,13 +179,11 @@
     return "Desktop (" + (navigator.platform || "Unknown") + ")";
   }
 
-  // 오늘 날짜 구하기 (YYYY-MM-DD)
   function getTodayStr() {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
+    return new Date().toISOString().split('T')[0];
   }
 
-  // 페이지 로드 시 당일 출근 상태 확인 및 버튼 상태 복원
+  // 당일 상태 체크 & PC 재부팅 후 상태 복원
   function checkDailyStatus() {
     const userName = document.getElementById("userName").value.trim();
     if (!userName) return;
@@ -192,13 +201,11 @@
     }
   }
 
-  // 성함 입력창 수정 시 자동 상태 점검 및 이름 저장
   document.getElementById("userName").addEventListener("input", function() {
     localStorage.setItem("lastUserName", this.value.trim());
     checkDailyStatus();
   });
 
-  // 초기화 처리
   window.addEventListener("DOMContentLoaded", () => {
     const savedName = localStorage.getItem("lastUserName");
     if (savedName) {
@@ -206,6 +213,25 @@
       checkDailyStatus();
     }
   });
+
+  // 3초 후 자동 닫힘 타이머
+  function showNoticeAndAutoClose() {
+    const modal = document.getElementById("noticeModal");
+    const countEl = document.getElementById("countdown");
+    let sec = 3;
+    countEl.innerText = sec;
+    modal.style.display = "flex";
+
+    const timer = setInterval(() => {
+      sec--;
+      if (sec > 0) {
+        countEl.innerText = sec;
+      } else {
+        clearInterval(timer);
+        modal.style.display = "none";
+      }
+    }, 1000);
+  }
 
   // 출퇴근 데이터 전송 (Append-Only)
   async function sendAttendance(actionType) {
@@ -235,9 +261,9 @@
       if (resultText.includes("Success")) {
         const todayStr = getTodayStr();
         if (actionType === 'checkIn') {
-          alert("출근 기록이 정상 등록되었습니다.");
           localStorage.setItem(`attendance_${userName}_${todayStr}`, "checkedIn");
           checkDailyStatus();
+          showNoticeAndAutoClose(); // 3초 카운트다운 후 자동 닫힘
         } else {
           alert("퇴근 기록이 정상 등록되었습니다. (필요 시 재등록 가능)");
           localStorage.setItem(`attendance_${userName}_${todayStr}`, "completed");
@@ -251,7 +277,7 @@
     }
   }
 
-  // 모달 제어 (바깥 클릭으로 쉽게 닫히지 않고 내용 유지)
+  // 사외근무 모달 제어
   function openOutstationModal() {
     const currentName = document.getElementById("userName").value.trim();
     if (currentName) document.getElementById("reqName").value = currentName;
@@ -262,11 +288,6 @@
     document.getElementById("outstationModal").style.display = "none";
   }
 
-  function handleOverlayClick(event) {
-    // 실수로 오버레이를 눌러 창이 닫히는 것을 방지
-  }
-
-  // 사외근무 신청 제출
   async function submitOutstationRequest() {
     const name = document.getElementById("reqName").value.trim();
     const date = document.getElementById("reqDate").value;
