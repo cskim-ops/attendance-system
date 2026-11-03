@@ -1,4 +1,4 @@
-GitHub Pages<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -232,7 +232,7 @@ GitHub Pages<!DOCTYPE html>
     }, seconds * 1000);
   }
 
-  // 시스템 자동 로직 (재부팅 복구 및 3회 제한 기능 포함)
+  // 시스템 초기화 함수 (새로고침 무한 재등록 루프 차단)
   async function initAutoAttendance() {
     const nameInput = document.getElementById("userName");
     const savedName = localStorage.getItem("lastUserName");
@@ -246,42 +246,28 @@ GitHub Pages<!DOCTYPE html>
     const userName = savedName.trim();
     const todayStr = getTodayStr();
     const savedStatus = localStorage.getItem(`attendance_${userName}_${todayStr}`);
-    
-    // 당일 재등록 횟수 카운터 조회
-    const retryKey = `retryCount_${userName}_${todayStr}`;
-    let retryCount = parseInt(localStorage.getItem(retryKey) || "0", 10);
-
+    const btnIn = document.getElementById("btnCheckIn");
     const now = new Date();
     const timeInMinutes = now.getHours() * 60 + now.getMinutes();
-    const btnIn = document.getElementById("btnCheckIn");
 
-    // 1. 이미 출근 기록이 존재하는 경우 (재부팅 감지 처리)
+    // 1. 이미 당일 출근 기록이 존재하는 경우
     if (savedStatus === "checkedIn" || savedStatus === "completed") {
       btnIn.disabled = true;
       btnIn.innerText = "☀️ 출근 완료됨";
 
-      // 17:20(1040분) 이후 접속 시 퇴근 미완료 상태면 자동 퇴근
-      if (timeInMinutes >= 1040 && savedStatus !== "completed") {
+      // 17:20(1040분) 이후 접속 시 퇴근 미완료 상태면 1회만 자동 퇴근
+      if (timeInMinutes >= 1040 && savedStatus !== "completed" && !sessionStorage.getItem("autoOutDone")) {
+        sessionStorage.setItem("autoOutDone", "true");
         await sendAttendance('checkOut', true);
         return;
       }
 
-      // PC 재부팅 등으로 다시 켜졌을 때 최대 3회까지 자동 재등록 처리
-      if (retryCount < 3) {
-        retryCount++;
-        localStorage.setItem(retryKey, retryCount.toString());
-        
-        // 재부팅 복구 표기와 함께 백엔드 전송
-        document.getElementById("notes").value = `[시스템 자동 복구 #${retryCount}] PC 재부팅 후 출근 확인`;
-        await sendAttendance('checkIn', true);
-      } else {
-        // 3회 초과 시 메시지 표출 후 3초 뒤 창 자동 닫기
-        startAutoClose("<span style='color:#007bff;'>ℹ️ 출근 완료 상태입니다.<br><small style='font-size:12px; color:#666;'>(당일 자동 재등록 제한 횟수 3회 도달)</small></span>", 3);
-      }
+      // 새로고침이나 단순 재열람 시 중복 재등록 없이 3초 후 깔끔히 창 닫기
+      startAutoClose("<span style='color:#007bff;'>☀️ 이미 당일 출근이 정상 완료되어 있습니다.</span>", 3);
       return;
     }
 
-    // 2. 최초 07:00(420분) 이후 접속 시 자동 출근
+    // 2. 최초 접속 시 07:00(420분) 이후면 자동 출근
     if (timeInMinutes >= 420 && !savedStatus) {
       await sendAttendance('checkIn', true);
     }
@@ -296,7 +282,7 @@ GitHub Pages<!DOCTYPE html>
     initAutoAttendance();
   });
 
-  // 출퇴근 처리 함수
+  // 출퇴근 데이터 전송
   async function sendAttendance(actionType, isAuto = false) {
     const userName = document.getElementById("userName").value.trim();
     const notes = document.getElementById("notes").value.trim();
@@ -349,7 +335,7 @@ GitHub Pages<!DOCTYPE html>
     }
   }
 
-  // 모달 제어
+  // 사외근무 모달 제어
   function openOutstationModal() {
     pauseAutoClose();
     const currentName = document.getElementById("userName").value.trim();
@@ -361,7 +347,7 @@ GitHub Pages<!DOCTYPE html>
     document.getElementById("outstationModal").style.display = "none";
   }
 
-  // 사외근무 제출
+  // 사외근무 사전 신청 제출
   async function submitOutstationRequest() {
     const name = document.getElementById("reqName").value.trim();
     const email = document.getElementById("reqEmail").value.trim();
