@@ -296,9 +296,14 @@
     if (name) localStorage.setItem("lastUserName", name);
   });
 
-  window.addEventListener("DOMContentLoaded", () => {
-    initAutoAttendance();
-  });
+ window.addEventListener("DOMContentLoaded", () => {
+  // 창 크기 고정 (가로 450px, 세로 620px)
+  try {
+    window.resizeTo(450, 620);
+  } catch(e) {}
+
+  initAutoAttendance();
+});
 
   // 일반 출퇴근 데이터 전송
   async function sendAttendance(actionType, isAuto = false) {
