@@ -333,6 +333,8 @@
       const todayStr = getTodayStr();
       if (actionType === 'checkIn') {
         localStorage.setItem(`attendance_${userName}_${todayStr}`, "checkedIn");
+        // 💡 출근 직후 전원 종료용 퇴근 플래그 생성 시간 기록
+        localStorage.setItem(`checkInTime_${userName}_${todayStr}`, Date.now().toString());
         btnIn.innerText = "☀️ 출근 완료됨";
         startAutoClose("☀️ 출근 기록이 정상 등록되었습니다!", 3);
       } else {
@@ -348,32 +350,48 @@
     }
   }
 
-  // 💡 수정된 창 닫힘(pagehide) 이벤트 로직
-window.addEventListener("pagehide", () => {
-  const userName = localStorage.getItem("lastUserName");
-  if (!userName) return;
+  // 💡 [핵심 보완] 출근 직후 닫힐 때 퇴근이 찍히는 문제를 완벽 차단한 pagehide 로직
+  window.addEventListener("pagehide", () => {
+    try {
+      const userName = localStorage.getItem("lastUserName");
+      if (!userName) return;
 
-  const todayStr = getTodayStr();
-  const savedStatus = localStorage.getItem(`attendance_${userName}_${todayStr}`);
+      const todayStr = getTodayStr();
+      const checkInTimeStr = localStorage.getItem(`checkInTime_${userName}_${todayStr}`);
+      const savedStatus = localStorage.getItem(`attendance_${userName}_${todayStr}`);
 
-  // 1. 이미 출근 완료(checkedIn)된 당일 아침 자동 닫힘일 때는 퇴근 요청을 쏘지 않음
-  // 2. 이미 퇴근 완료(completed)된 상태에서도 중복 전송 방지
-  if (savedStatus === "completed") return;
+      // 1. 당일 이미 수동/자동 퇴근 완료된 상태면 전송 안 함
+      if (savedStatus === "completed") return;
 
-  // 출근 등록 후 최소 1분 이상 지난 상태에서 창이 닫히거나 전원이 꺼질 때만 퇴근 전송
-  const payload = JSON.stringify({
-    action: "checkOut",
-    userName: userName,
-    notes: "PC 자동 종료 퇴근",
-    ip: userIp,
-    device: getDeviceInfo()
+      // 2. 출근한 기록이 없는 상태면 전송 안 함
+      if (!checkInTimeStr) return;
+
+      // 3. ☀️ 출근 후 10분(600,000ms) 이내에 창이 닫힐 때는 절대 퇴근으로 인정하지 않음!
+      const checkInTime = parseInt(checkInTimeStr, 10);
+      const currentTime = Date.now();
+      const elapsedMinutes = (currentTime - checkInTime) / (1000 * 60);
+
+      if (elapsedMinutes < 10) {
+        return; // 아침 출근 창이 3초 만에 닫히거나 10분 내로 창을 닫은 경우 차단
+      }
+
+      // 4. 출근 후 10분이 지난 상태에서 브라우저/PC가 꺼질 때만 최종 퇴근 수신
+      const payload = JSON.stringify({
+        action: "checkOut",
+        userName: userName,
+        notes: "PC 자동 종료 퇴근",
+        ip: userIp,
+        device: getDeviceInfo()
+      });
+
+      if (navigator.sendBeacon) {
+        const blob = new Blob([payload], { type: 'text/plain;charset=utf-8' });
+        navigator.sendBeacon(GAS_WEBAPP_URL, blob);
+      }
+    } catch (e) {
+      // 에러 방지
+    }
   });
-
-  if (navigator.sendBeacon) {
-    const blob = new Blob([payload], { type: 'text/plain;charset=utf-8' });
-    navigator.sendBeacon(GAS_WEBAPP_URL, blob);
-  }
-});
 
   function openOutstationModal() {
     pauseAutoClose();
@@ -430,6 +448,3 @@ window.addEventListener("pagehide", () => {
     }
   }
 </script>
-
-</body>
-</html>
