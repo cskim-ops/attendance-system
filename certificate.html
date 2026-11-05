@@ -3,40 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <title>근태 원천 기록 증명서</title>
-  <style>
-    body { font-family: 'Malgun Gothic', sans-serif; margin: 30px; color: #333; }
-    .header { text-align: center; margin-bottom: 25px; }
-    .header h1 { font-size: 26px; margin-bottom: 5px; }
-    .header p { color: #666; font-size: 14px; margin-top: 0; }
-    
-    .notice-box {
-      background: #f8f9fa; border-left: 4px solid #007bff; padding: 12px 15px;
-      font-size: 13px; color: #495057; margin-bottom: 20px; line-height: 1.5;
-    }
-    
-    .filter-bar {
-      display: flex; gap: 10px; align-items: center; justify-content: center;
-      margin-bottom: 20px; background: #e9ecef; padding: 15px; border-radius: 8px; flex-wrap: wrap;
-    }
-    .filter-bar input[type="text"], .filter-bar input[type="date"] {
-      padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px;
-    }
-    .btn-search { padding: 8px 18px; background-color: #007bff; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
-    .btn-quick { padding: 8px 12px; background-color: #6c757d; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer; }
-    .btn-print { padding: 8px 18px; background-color: #28a745; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
-    
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; font-size: 13px; }
-    th { background-color: #f1f3f5; font-weight: bold; }
-    .in-time { color: #28a745; font-weight: bold; }
-    .out-time { color: #dc3545; font-weight: bold; }
-    .leave-badge { background-color: #e2e3e5; padding: 3px 8px; border-radius: 4px; font-weight: bold; color: #383d41; }
-    
-    @media print {
-      .filter-bar, .notice-box { display: none !important; }
-      body { margin: 0; }
-    }
-  </style>
+<style>
+  body { 
+    font-family: 'Malgun Gothic', sans-serif; 
+    margin: 20px auto; 
+    max-width: 900px; /* 기존 화면 크기로 고정 */
+    padding: 0 15px;
+    color: #333; 
+  }
+  .header { text-align: center; margin-bottom: 20px; }
+  .header h1 { font-size: 22px; margin-bottom: 5px; }
+  .header p { color: #666; font-size: 13px; margin: 0; }
+  
+  .notice-box {
+    background: #f8f9fa; border-left: 4px solid #007bff; padding: 10px 12px;
+    font-size: 12px; color: #495057; margin-bottom: 15px; line-height: 1.4;
+  }
+  
+  .filter-bar {
+    display: flex; gap: 8px; align-items: center; justify-content: center;
+    margin-bottom: 15px; background: #e9ecef; padding: 10px 12px; border-radius: 6px; font-size: 13px;
+  }
+  .filter-bar input[type="text"], .filter-bar input[type="date"] {
+    padding: 6px 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 13px;
+  }
+  .btn-search { padding: 6px 14px; background-color: #007bff; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+  .btn-quick { padding: 6px 10px; background-color: #6c757d; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; }
+  .btn-print { padding: 6px 14px; background-color: #28a745; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+  
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { border: 1px solid #dee2e6; padding: 8px 6px; text-align: center; font-size: 12px; }
+  th { background-color: #f1f3f5; font-weight: bold; }
+  .in-time { color: #28a745; font-weight: bold; }
+  .out-time { color: #dc3545; font-weight: bold; }
+  .leave-badge { background-color: #e2e3e5; padding: 2px 6px; border-radius: 4px; font-weight: bold; color: #383d41; }
+  
+  @media print {
+    .filter-bar, .notice-box { display: none !important; }
+    body { max-width: 100%; margin: 0; padding: 0; }
+  }
+</style>
 </head>
 <body>
 
