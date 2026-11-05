@@ -148,37 +148,38 @@
     <button id="btnCheckOut" class="btn btn-out" onclick="sendAttendance('checkOut')">🌙 퇴근 등록 (재등록 가능)</button>
   </div>
 
-  <button class="btn btn-outstation" onclick="pauseAutoClose(); openOutstationModal();">📝 사외근무 / 직퇴 사전 신청</button>
+  <button class="btn btn-outstation" onclick="pauseAutoClose(); openOutstationModal();">📝 사외근무 (현장출퇴근 / 외근 / 직퇴) 신청</button>
 </div>
 
+<!-- 팝업 모달창 -->
 <div id="outstationModal" class="modal-overlay">
   <div class="modal-content" style="text-align: left;">
-    <h3 style="margin-top:0; color:#2c3e50;">사외근무(직퇴) 사전 신청</h3>
+    <h3 style="margin-top:0; color:#2c3e50;">📝 사외근무 (현장출퇴근/외근) 신청</h3>
     <div class="form-group">
       <label for="reqName">성함</label>
       <input type="text" id="reqName" placeholder="성함 입력">
     </div>
     <div class="form-group">
-      <label for="reqEmail">결과 수신 이메일</label>
-      <input type="email" id="reqEmail" placeholder="결과를 안내받을 이메일 주소">
+      <label for="reqEmail">승인 결과 수신 이메일</label>
+      <input type="email" id="reqEmail" placeholder="결과를 통보받을 이메일 주소">
     </div>
     <div class="form-group">
-      <label for="reqDate">외근 예정 일자</label>
+      <label for="reqDate">사외근무 예정 일자</label>
       <input type="date" id="reqDate">
     </div>
     <div class="form-group">
-      <label for="reqReason">사유 및 미팅 장소</label>
-      <textarea id="reqReason" rows="3" placeholder="예: OO기업 외부 미팅 후 현지 퇴근"></textarea>
+      <label for="reqReason">사유 및 현장 장소</label>
+      <textarea id="reqReason" rows="3" placeholder="예: 오전 OO현장 직접 출근 / 외부 미팅 후 현지 퇴근"></textarea>
     </div>
     <div class="modal-actions">
       <button class="btn-modal-cancel" onclick="closeOutstationModal()">취소</button>
-      <button id="btnSubmitOutstation" class="btn-modal-submit" onclick="submitOutstationRequest()">신청 제출</button>
+      <button id="btnSubmitOutstation" class="btn-modal-submit" onclick="submitOutstationRequest()">승인 요청 제출</button>
     </div>
   </div>
 </div>
 
 <script>
-  // ⚠️ 본인의 실제 웹앱 URL이 들어있는지 재확인해 주세요.
+  // ⚠️ 본인의 실제 배포된 앱스 스크립트 웹앱 URL입니다.
   const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbymtvCufCGWgNvmRQulCPgcs2GDHyIKeTaQSn40VqyWkAqaHXpDc7sLkEz0vUoAJnqK/exec";
 
   let userIp = "-";
@@ -265,7 +266,7 @@
     }, seconds * 1000);
   }
 
-  // 시스템 초기화 및 무조건 자동 출근 전송
+  // 시스템 초기화 및 자동 출근 전송
   async function initAutoAttendance() {
     const nameInput = document.getElementById("userName");
     const savedName = localStorage.getItem("lastUserName");
@@ -273,7 +274,7 @@
     if (savedName) {
       nameInput.value = savedName;
     } else {
-      return; // 이름이 없으면 대기 (수동 입력 필요)
+      return;
     }
 
     const userName = savedName.trim();
@@ -281,7 +282,6 @@
     const savedStatus = localStorage.getItem(`attendance_${userName}_${todayStr}`);
     const btnIn = document.getElementById("btnCheckIn");
 
-    // 이미 출근한 경우
     if (savedStatus === "checkedIn" || savedStatus === "completed") {
       btnIn.disabled = true;
       btnIn.innerText = "☀️ 출근 완료됨";
@@ -289,7 +289,6 @@
       return;
     }
 
-    // 시간 체크 제거 ➔ 실행 시 무조건 자동 출근 처리
     await sendAttendance('checkIn', true);
   }
 
@@ -299,10 +298,12 @@
   });
 
   window.addEventListener("DOMContentLoaded", () => {
+    // 기본 외근 날짜를 오늘로 설정
+    document.getElementById("reqDate").value = getTodayStr();
     initAutoAttendance();
   });
 
-  // 출퇴근 데이터 전송 (CORS 보완)
+  // 출퇴근 데이터 전송
   async function sendAttendance(actionType, isAuto = false) {
     const userName = document.getElementById("userName").value.trim();
     const notes = document.getElementById("notes").value.trim();
@@ -326,8 +327,7 @@
     };
 
     try {
-      // mode: 'no-cors' 및 text 수신 안정화
-      const res = await fetch(GAS_WEBAPP_URL, {
+      await fetch(GAS_WEBAPP_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload)
@@ -351,6 +351,7 @@
     }
   }
 
+  // 모달 제어
   function openOutstationModal() {
     pauseAutoClose();
     const currentName = document.getElementById("userName").value.trim();
@@ -362,6 +363,7 @@
     document.getElementById("outstationModal").style.display = "none";
   }
 
+  // 📝 사외근무 승인 요청 전송 (관리자 이메일 발송 연동)
   async function submitOutstationRequest() {
     const name = document.getElementById("reqName").value.trim();
     const email = document.getElementById("reqEmail").value.trim();
@@ -369,20 +371,22 @@
     const reason = document.getElementById("reqReason").value.trim();
     const submitBtn = document.getElementById("btnSubmitOutstation");
 
-    if (!name || !date || !reason) {
-      alert("성함, 외근 예정 일자, 사유를 모두 입력해 주세요.");
+    if (!name || !email || !date || !reason) {
+      alert("성함, 수신 이메일, 사외근무 일자, 사유를 모두 입력해 주세요.");
       return;
     }
 
     submitBtn.disabled = true;
-    submitBtn.innerText = "신청 중...";
+    submitBtn.innerText = "승인 요청 중...";
 
     const payload = {
-      action: "outstationRequest",
+      action: "requestLeaveApproval",
       userName: name,
       userEmail: email,
-      workDate: date,
-      reason: reason
+      startDate: date,
+      endDate: date,
+      leaveType: "사외근무(현장출퇴근/외근)",
+      notes: reason
     };
 
     try {
@@ -395,56 +399,18 @@
       closeOutstationModal();
       document.getElementById("reqReason").value = "";
       submitBtn.disabled = false;
-      submitBtn.innerText = "신청 제출";
+      submitBtn.innerText = "승인 요청 제출";
 
+      alert("사외근무(현장출퇴근) 승인 요청이 관리자에게 전달되었습니다.");
       startAutoClose("📝 사외근무 신청이 완료되었습니다.", 3);
 
     } catch (err) {
       alert("신청 중 오류가 발생했습니다.");
       submitBtn.disabled = false;
-      submitBtn.innerText = "신청 제출";
+      submitBtn.innerText = "승인 요청 제출";
     }
   }
 </script>
 
 </body>
 </html>
-// 📝 사외근무 (현장출퇴근 / 외근 / 직퇴) 신청 처리 함수
-function submitOutsideWorkRequest() {
-  const userName = document.getElementById("employeeName").value.trim();
-  const notes = document.getElementById("notesInput") ? document.getElementById("notesInput").value.trim() : "";
-  
-  if (!userName) {
-    alert("성함을 입력해 주세요.");
-    return;
-  }
-
-  const userEmail = prompt("승인 결과를 수신할 이메일 주소를 입력해 주세요:");
-  if (!userEmail) {
-    alert("이메일 주소를 입력해 주셔야 승인 신청이 완료됩니다.");
-    return;
-  }
-
-  fetch(GAS_WEBAPP_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify({
-      action: "requestLeaveApproval",
-      userName: userName,
-      userEmail: userEmail,
-      leaveType: "사외근무(현장출퇴근/외근)",
-      notes: notes || "사외근무 신청"
-    })
-  })
-  .then(res => res.text())
-  .then(data => {
-    if (data.indexOf("Success") !== -1) {
-      alert("사외근무(현장출퇴근) 승인 요청이 관리자에게 전달되었습니다.");
-    } else {
-      alert("신청 중 오류가 발생했습니다: " + data);
-    }
-  })
-  .catch(err => {
-    alert("통신 에러가 발생했습니다.");
-  });
-}
