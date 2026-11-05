@@ -4,115 +4,137 @@
   <meta charset="UTF-8">
   <title>근태 원천 기록 증명서</title>
   <style>
-    body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
-    /* 이전 너비 규격 복원 (중앙 정렬, 1000px) */
-    .cert-container { max-width: 1000px; margin: 20px auto; background: #fff; padding: 35px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-    .cert-title { text-align: center; margin-bottom: 5px; color: #2c3e50; }
-    .cert-subtitle { text-align: center; font-size: 14px; color: #666; margin-bottom: 25px; }
-    .box-info { background: #f8f9fa; border-left: 4px solid #007bff; padding: 15px; margin-bottom: 20px; font-size: 13px; line-height: 1.6; }
-    .search-bar { display: flex; gap: 10px; margin-bottom: 20px; }
-    .search-bar input { flex: 1; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 4px; }
-    .btn-search { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
-    .btn-print { padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+    body { font-family: 'Malgun Gothic', sans-serif; margin: 30px; color: #333; }
+    .header { text-align: center; margin-bottom: 25px; }
+    .header h1 { font-size: 26px; margin-bottom: 5px; }
+    .header p { color: #666; font-size: 14px; margin-top: 0; }
     
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-    th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; }
-    th { background: #f1f3f5; color: #495057; }
+    .notice-box {
+      background: #f8f9fa; border-left: 4px solid #007bff; padding: 12px 15px;
+      font-size: 13px; color: #495057; margin-bottom: 20px; line-height: 1.5;
+    }
     
+    .filter-bar {
+      display: flex; gap: 10px; align-items: center; justify-content: center;
+      margin-bottom: 20px; background: #e9ecef; padding: 15px; border-radius: 8px; flex-wrap: wrap;
+    }
+    .filter-bar input[type="text"], .filter-bar input[type="date"] {
+      padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px;
+    }
+    .btn-search { padding: 8px 18px; background-color: #007bff; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+    .btn-quick { padding: 8px 12px; background-color: #6c757d; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer; }
+    .btn-print { padding: 8px 18px; background-color: #28a745; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+    
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; font-size: 13px; }
+    th { background-color: #f1f3f5; font-weight: bold; }
     .in-time { color: #28a745; font-weight: bold; }
     .out-time { color: #dc3545; font-weight: bold; }
-    .leave-badge { background: #e7f5ff; color: #1c7ed6; font-weight: bold; padding: 4px 8px; border-radius: 4px; display: inline-block; }
+    .leave-badge { background-color: #e2e3e5; padding: 3px 8px; border-radius: 4px; font-weight: bold; color: #383d41; }
     
-    .footer-stamp { text-align: center; margin-top: 40px; font-size: 14px; }
     @media print {
-      body { background: white; padding: 0; }
-      .cert-container { box-shadow: none; padding: 0; max-width: 100%; }
-      .search-bar, .btn-print { display: none !important; }
+      .filter-bar, .notice-box { display: none !important; }
+      body { margin: 0; }
     }
   </style>
 </head>
 <body>
 
-<div class="cert-container">
-  <h1 class="cert-title">근태 원천 기록 증명서</h1>
-  <div class="cert-subtitle">(관공서 및 노동부 제출용)</div>
-
-  <div class="box-info">
-    <b>[시스템 위·변조 방지 안내]</b><br>
-    본 증명서의 데이터는 사내 근태관리 시스템 백엔드(Google Apps Script)에 의해 생성 시각이 초 단위로 자동 누적(Append-Only) 수집된 원천 기록입니다. 임의의 편집이나 수정이 불가능하며, 승인된 연차 내역과 접속 IP 및 기기 식별 정보가 함께 기록되어 증빙 효력을 갖습니다.
-  </div>
-
-  <div class="search-bar">
-    <input type="text" id="searchName" placeholder="성함을 입력하세요 (예: 홍길동)">
-    <button class="btn-search" onclick="fetchCertData()">내역 조회</button>
-    <button class="btn-print" onclick="window.print()">🖨️ PDF 저장 / 인쇄</button>
-  </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>기록 날짜</th>
-        <th>성함</th>
-        <th>출근 타임스탬프</th>
-        <th>퇴근 타임스탬프</th>
-        <th>연차 구분</th>
-        <th>비고 (특이사항)</th>
-        <th>접속 IP</th>
-        <th>접속 기기</th>
-      </tr>
-    </thead>
-    <tbody id="certTableBody">
-      <tr><td colspan="8" style="padding:20px; color:#777;">성함을 입력한 후 [내역 조회] 버튼을 눌러주세요.</td></tr>
-    </tbody>
-  </table>
-
-  <div class="footer-stamp">
-    <p>위 기록은 사내 출퇴근 시스템에서 자동으로 수집된 사실과 다름없음을 증명합니다.</p>
-    <p id="todayDateStr" style="font-weight: bold; margin-top: 15px;"></p>
-  </div>
+<div class="header">
+  <h1>근태 원천 기록 증명서</h1>
+  <p>(관공서 및 노동부 제출용)</p>
 </div>
 
+<div class="notice-box">
+  <strong>[시스템 위·변조 방지 안내]</strong><br>
+  본 증명서의 데이터는 사내 근태관리 시스템 백엔드(Google Apps Script)에 의해 생성 시각이 초 단위로 자동 누적(Append-Only) 수집된 원천 기록입니다. 임의의 편집이나 수정이 불가능하며, 승인된 연차 내역과 접속 IP 및 기기 식별 정보가 함께 기록되어 증빙 효력을 갖습니다.
+</div>
+
+<div class="filter-bar">
+  <label><b>성함:</b></label>
+  <input type="text" id="searchName" placeholder="성함 입력" style="width: 100px;">
+  
+  <label><b>조회 기간:</b></label>
+  <input type="date" id="startDate"> ~ <input type="date" id="endDate">
+  
+  <button class="btn-quick" onclick="setYearRange()">올해 전체(1년)</button>
+  <button class="btn-search" onclick="loadHistory()">내역 조회</button>
+  <button class="btn-print" onclick="window.print()">🖨️ PDF 저장 / 인쇄</button>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>기록 날짜</th>
+      <th>성함</th>
+      <th>출근 타임스탬프</th>
+      <th>퇴근 타임스탬프</th>
+      <th>연차 구분</th>
+      <th>비고 (특이사항)</th>
+      <th>접속 IP</th>
+      <th>접속 기기</th>
+    </tr>
+  </thead>
+  <tbody id="historyTable">
+    <tr>
+      <td colspan="8" style="padding: 30px; color: #888;">성함과 조회 기간을 입력한 후 [내역 조회] 버튼을 눌러주세요.</td>
+    </tr>
+  </tbody>
+</table>
+
 <script>
-  // ⚠️ 본인의 실제 구글 웹앱 URL (ID 포함)
-  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwqBpl9uSP4s3vFO1T3OBLpUK-EFOGlbGkkQei0fgstwKvs8_oexID4ZFS2NKUUiqE2/exec";
+  // ⚠️ 본인의 실제 구글 웹앱 URL을 넣으세요
+  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyLNNEQpmlQFY6fIv4qfPa8JeNRSsJvyP8glTeC0xo5hEld8O8R-KnzamA9InIDq7_S/exec";
 
-  document.getElementById("todayDateStr").innerText = "발급일자: " + new Date().toLocaleDateString("ko-KR", { year: 'numeric', month: 'long', day: 'numeric' });
+  function setYearRange() {
+    const today = new Date();
+    const year = today.getFullYear();
+    document.getElementById("startDate").value = `${year}-01-01`;
+    document.getElementById("endDate").value = `${year}-12-31`;
+  }
 
-  async function fetchCertData() {
+  async function loadHistory() {
     const name = document.getElementById("searchName").value.trim();
+    const sDate = document.getElementById("startDate").value;
+    const eDate = document.getElementById("endDate").value;
+    const tbody = document.getElementById("historyTable");
+
     if (!name) {
-      alert("성함을 입력해주세요.");
+      alert("조회할 성함을 입력해 주세요.");
       return;
     }
 
-    const tbody = document.getElementById("certTableBody");
-    tbody.innerHTML = '<tr><td colspan="8" style="padding:20px; color:#777;">데이터를 불러오는 중입니다...</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="8" style="padding:30px;">데이터를 불러오는 중입니다...</td></tr>`;
+
+    let requestUrl = `${GAS_WEBAPP_URL}?action=getHistory&name=${encodeURIComponent(name)}`;
+    if (sDate) requestUrl += `&startDate=${sDate}`;
+    if (eDate) requestUrl += `&endDate=${eDate}`;
 
     try {
-      const res = await fetch(`${GAS_WEBAPP_URL}?action=getHistory&name=${encodeURIComponent(name)}`);
+      const res = await fetch(requestUrl);
       const data = await res.json();
 
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="padding:20px; color:#777;">조회된 근태/연차 기록이 없습니다.</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="8" style="padding:30px; color:#888;">해당 기간에 조회된 근태 기록이 없습니다.</td></tr>`;
         return;
       }
 
       let html = "";
       data.forEach(item => {
-        const leaveHtml = (item.leaveInfo && item.leaveInfo !== "-") 
-          ? `<span class="leave-badge">${item.leaveInfo}</span>` 
-          : "-";
+        const inHtml = item.inTime !== "-" ? `<span class="in-time">${item.inTime}</span>` : "-";
+        const outHtml = item.outTime !== "-" ? `<span class="out-time">${item.outTime}</span>` : "-";
+        const leaveHtml = item.leaveInfo !== "-" ? `<span class="leave-badge">${item.leaveInfo}</span>` : "-";
 
         html += `
           <tr>
             <td><b>${item.date}</b></td>
             <td>${item.name}</td>
-            <td class="in-time">${item.inTime}</td>
-            <td class="out-time">${item.outTime}</td>
+            <td>${inHtml}</td>
+            <td>${outHtml}</td>
             <td>${leaveHtml}</td>
-            <td style="text-align:left;">${item.note}</td>
-            <td>${item.ip}</td>
-            <td>${item.device}</td>
+            <td>${item.note || "-"}</td>
+            <td>${item.ip || "-"}</td>
+            <td>${item.device || "-"}</td>
           </tr>
         `;
       });
@@ -120,8 +142,8 @@
       tbody.innerHTML = html;
 
     } catch (err) {
-      alert("데이터를 가져오는 중 오류가 발생했습니다.");
-      tbody.innerHTML = '<tr><td colspan="8" style="color:red;">조회 실패</td></tr>';
+      alert("내역을 불러오는 중 오류가 발생했습니다.");
+      tbody.innerHTML = `<tr><td colspan="8" style="padding:30px; color:red;">데이터 로딩 실패</td></tr>`;
     }
   }
 </script>
