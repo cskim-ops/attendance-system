@@ -179,7 +179,7 @@
 
 <script>
   // ⚠️ 본인의 실제 웹앱 URL이 들어있는지 재확인해 주세요.
-  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzARNIp6sLc82qQ1oX0EJpk_eIv_E6kiM-QoVn0eo9Ob-sGnvTsHrK-QAcgoIDRG-6x/exec";
+  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbymtvCufCGWgNvmRQulCPgcs2GDHyIKeTaQSn40VqyWkAqaHXpDc7sLkEz0vUoAJnqK/exec";
 
   let userIp = "-";
   let autoCloseTimer = null;
@@ -409,3 +409,42 @@
 
 </body>
 </html>
+// 📝 사외근무 (현장출퇴근 / 외근 / 직퇴) 신청 처리 함수
+function submitOutsideWorkRequest() {
+  const userName = document.getElementById("employeeName").value.trim();
+  const notes = document.getElementById("notesInput") ? document.getElementById("notesInput").value.trim() : "";
+  
+  if (!userName) {
+    alert("성함을 입력해 주세요.");
+    return;
+  }
+
+  const userEmail = prompt("승인 결과를 수신할 이메일 주소를 입력해 주세요:");
+  if (!userEmail) {
+    alert("이메일 주소를 입력해 주셔야 승인 신청이 완료됩니다.");
+    return;
+  }
+
+  fetch(GAS_WEBAPP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({
+      action: "requestLeaveApproval",
+      userName: userName,
+      userEmail: userEmail,
+      leaveType: "사외근무(현장출퇴근/외근)",
+      notes: notes || "사외근무 신청"
+    })
+  })
+  .then(res => res.text())
+  .then(data => {
+    if (data.indexOf("Success") !== -1) {
+      alert("사외근무(현장출퇴근) 승인 요청이 관리자에게 전달되었습니다.");
+    } else {
+      alert("신청 중 오류가 발생했습니다: " + data);
+    }
+  })
+  .catch(err => {
+    alert("통신 에러가 발생했습니다.");
+  });
+}
