@@ -2,145 +2,296 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>근태 원천 기록 증명서</title>
-<style>
-  body { 
-    font-family: 'Malgun Gothic', sans-serif; 
-    margin: 20px auto; 
-    max-width: 900px; /* 기존 화면 크기로 고정 */
-    padding: 0 15px;
-    color: #333; 
-  }
-  .header { text-align: center; margin-bottom: 20px; }
-  .header h1 { font-size: 22px; margin-bottom: 5px; }
-  .header p { color: #666; font-size: 13px; margin: 0; }
-  
-  .notice-box {
-    background: #f8f9fa; border-left: 4px solid #007bff; padding: 10px 12px;
-    font-size: 12px; color: #495057; margin-bottom: 15px; line-height: 1.4;
-  }
-  
-  .filter-bar {
-    display: flex; gap: 8px; align-items: center; justify-content: center;
-    margin-bottom: 15px; background: #e9ecef; padding: 10px 12px; border-radius: 6px; font-size: 13px;
-  }
-  .filter-bar input[type="text"], .filter-bar input[type="date"] {
-    padding: 6px 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 13px;
-  }
-  .btn-search { padding: 6px 14px; background-color: #007bff; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
-  .btn-quick { padding: 6px 10px; background-color: #6c757d; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; }
-  .btn-print { padding: 6px 14px; background-color: #28a745; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
-  
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-  th, td { border: 1px solid #dee2e6; padding: 8px 6px; text-align: center; font-size: 12px; }
-  th { background-color: #f1f3f5; font-weight: bold; }
-  .in-time { color: #28a745; font-weight: bold; }
-  .out-time { color: #dc3545; font-weight: bold; }
-  .leave-badge { background-color: #e2e3e5; padding: 2px 6px; border-radius: 4px; font-weight: bold; color: #383d41; }
-  
-  @media print {
-    .filter-bar, .notice-box { display: none !important; }
-    body { max-width: 100%; margin: 0; padding: 0; }
-  }
-</style>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+      background-color: #f4f6f9;
+      margin: 0;
+      padding: 30px 20px;
+      color: #333;
+    }
+    
+    /* 📐 화면 전체 폭을 여유 있게 1150px로 확대 */
+    .container {
+      max-width: 1150px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 35px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    .header h1 {
+      font-size: 26px;
+      color: #1e293b;
+      margin: 0 0 6px 0;
+    }
+    .header p {
+      font-size: 14px;
+      color: #64748b;
+      margin: 0;
+    }
+
+    .notice-box {
+      background-color: #f8fafc;
+      border-left: 4px solid #2563eb;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.5;
+    }
+    .notice-box b { color: #1e293b; }
+
+    /* 🔍 검색 컨트롤 바 (버튼 추가에 맞춰 레이아웃 정돈) */
+    .filter-bar {
+      background-color: #f1f5f9;
+      padding: 14px 20px;
+      border-radius: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 25px;
+    }
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #334155;
+    }
+    .filter-bar input[type="text"], 
+    .filter-bar input[type="date"] {
+      padding: 8px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+    }
+    
+    /* 🔘 조회 기간 퀵 버튼 스타일 */
+    .btn-quick {
+      background-color: #475569;
+      color: white;
+      border: none;
+      padding: 9px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .btn-quick:hover { background-color: #334155; }
+    
+    .btn-search {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-search:hover { background-color: #0069d9; }
+
+    .btn-print {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-left: auto;
+    }
+    .btn-print:hover { background-color: #218838; }
+
+    /* 📊 데이터 테이블 스타일 */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      text-align: center;
+    }
+    th {
+      background-color: #f8fafc;
+      color: #334155;
+      padding: 12px;
+      border: 1px solid #e2e8f0;
+      font-weight: bold;
+    }
+    td {
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      color: #1e293b;
+    }
+    .empty-msg {
+      padding: 40px;
+      color: #94a3b8;
+    }
+
+    @media print {
+      body { background-color: white; padding: 0; }
+      .container { box-shadow: none; padding: 0; max-width: 100%; }
+      .filter-bar, .btn-print { display: none !important; }
+    }
+  </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>근태 원천 기록 증명서</h1>
-  <p>(관공서 및 노동부 제출용)</p>
-</div>
+<div class="container">
+  <div class="header">
+    <h1>근태 원천 기록 증명서</h1>
+    <p>(관공서 및 노동부 제출용)</p>
+  </div>
 
-<div class="notice-box">
-  <strong>[시스템 위·변조 방지 안내]</strong><br>
-  본 증명서의 데이터는 사내 근태관리 시스템 백엔드(Google Apps Script)에 의해 생성 시각이 초 단위로 자동 누적(Append-Only) 수집된 원천 기록입니다. 임의의 편집이나 수정이 불가능하며, 승인된 연차 내역과 접속 IP 및 기기 식별 정보가 함께 기록되어 증빙 효력을 갖습니다.
-</div>
+  <div class="notice-box">
+    <b>[시스템 위·변조 방지 안내]</b><br>
+    본 증명서의 데이터는 사내 근태관리 시스템 백엔드(Google Apps Script)에 의해 생성 시각이 초 단위로 자동 누적(Append-Only) 수집된 원천 기록입니다. 임의의 편집이나 수정이 불가능하며, 승인된 연차 내역과 접속 IP 및 기기 식별 정보가 함께 기록되어 증빙 효력을 갖습니다.
+  </div>
 
-<div class="filter-bar">
-  <label><b>성함:</b></label>
-  <input type="text" id="searchName" placeholder="성함 입력" style="width: 100px;">
-  
-  <label><b>조회 기간:</b></label>
-  <input type="date" id="startDate"> ~ <input type="date" id="endDate">
-  
-  <button class="btn-quick" onclick="setYearRange()">올해 전체(1년)</button>
-  <button class="btn-search" onclick="loadHistory()">내역 조회</button>
-  <button class="btn-print" onclick="window.print()">🖨️ PDF 저장 / 인쇄</button>
-</div>
+  <!-- 🔍 검색 조작 바 -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span>성함:</span>
+      <input type="text" id="searchName" placeholder="성함 입력" style="width: 110px;">
+    </div>
 
-<table>
-  <thead>
-    <tr>
-      <th>기록 날짜</th>
-      <th>성함</th>
-      <th>출근 타임스탬프</th>
-      <th>퇴근 타임스탬프</th>
-      <th>연차 구분</th>
-      <th>비고 (특이사항)</th>
-      <th>접속 IP</th>
-      <th>접속 기기</th>
-    </tr>
-  </thead>
-  <tbody id="historyTable">
-    <tr>
-      <td colspan="8" style="padding: 30px; color: #888;">성함과 조회 기간을 입력한 후 [내역 조회] 버튼을 눌러주세요.</td>
-    </tr>
-  </tbody>
-</table>
+    <div class="filter-group">
+      <span>조회 기간:</span>
+      <input type="date" id="startDate">
+      <span>~</span>
+      <input type="date" id="endDate">
+    </div>
+
+    <!-- 🗓️ 기간/월간 선택 퀵 버튼 -->
+    <button type="button" class="btn-quick" onclick="setSearchRange('thisMonth')">이번 달</button>
+    <button type="button" class="btn-quick" onclick="setSearchRange('lastMonth')">지난 달</button>
+    <button type="button" class="btn-quick" onclick="setSearchRange('year')">올해 전체(1년)</button>
+
+    <button type="button" class="btn-search" onclick="fetchHistoryData()">내역 조회</button>
+    <button type="button" class="btn-print" onclick="window.print()">🖨️ PDF 저장 / 인쇄</button>
+  </div>
+
+  <!-- 📊 내역 출력 테이블 -->
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 12%;">기록 날짜</th>
+        <th style="width: 10%;">성함</th>
+        <th style="width: 15%;">출근 타임스탬프</th>
+        <th style="width: 15%;">퇴근 타임스탬프</th>
+        <th style="width: 12%;">연차 구분</th>
+        <th style="width: 18%;">비고 (특이사항)</th>
+        <th style="width: 18%;">접속 IP / 기기</th>
+      </tr>
+    </thead>
+    <tbody id="historyTbody">
+      <tr>
+        <td colspan="7" class="empty-msg">성함과 조회 기간을 입력한 후 [내역 조회] 버튼을 눌러주세요.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
 <script>
-  // ⚠️ 본인의 실제 구글 웹앱 URL을 넣으세요
+  // ⚠️ 구글 앱스 스크립트 웹앱 URL
   const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwFDw0Ry1hHzMzBx18jVCv-pWY6Bd32jPQKGjGRkrxLyMSIp9T0d939peM8GTCXhFOH/exec";
 
-  function setYearRange() {
-    const today = new Date();
-    const year = today.getFullYear();
-    document.getElementById("startDate").value = `${year}-01-01`;
-    document.getElementById("endDate").value = `${year}-12-31`;
+  function formatDateStr(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
-  async function loadHistory() {
+  // 🗓️ 오늘 / 이번 달 / 지난 달 / 올해 전체 날짜 자동 세팅
+  function setSearchRange(type) {
+    const now = new Date();
+    const startEl = document.getElementById("startDate");
+    const endEl = document.getElementById("endDate");
+
+    if (type === 'thisMonth') {
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      startEl.value = formatDateStr(new Date(year, month, 1));
+      endEl.value = formatDateStr(new Date(year, month + 1, 0));
+    } else if (type === 'lastMonth') {
+      const year = now.getFullYear();
+      const month = now.getMonth() - 1;
+      startEl.value = formatDateStr(new Date(year, month, 1));
+      endEl.value = formatDateStr(new Date(year, month + 1, 0));
+    } else if (type === 'year') {
+      const year = now.getFullYear();
+      startEl.value = `${year}-01-01`;
+      endEl.value = `${year}-12-31`;
+    }
+  }
+
+  // 페이지 로딩 시 자동으로 '이번 달' 세팅
+  window.addEventListener("DOMContentLoaded", () => {
+    setSearchRange('thisMonth');
+  });
+
+  // 🔄 내역 조회 함수
+  async function fetchHistoryData() {
     const name = document.getElementById("searchName").value.trim();
-    const sDate = document.getElementById("startDate").value;
-    const eDate = document.getElementById("endDate").value;
-    const tbody = document.getElementById("historyTable");
+    const start = document.getElementById("startDate").value;
+    const end = document.getElementById("endDate").value;
+    const tbody = document.getElementById("historyTbody");
 
     if (!name) {
-      alert("조회할 성함을 입력해 주세요.");
+      alert("성함을 입력해 주세요.");
       return;
     }
 
-    tbody.innerHTML = `<tr><td colspan="8" style="padding:30px;">데이터를 불러오는 중입니다...</td></tr>`;
-
-    let requestUrl = `${GAS_WEBAPP_URL}?action=getHistory&name=${encodeURIComponent(name)}`;
-    if (sDate) requestUrl += `&startDate=${sDate}`;
-    if (eDate) requestUrl += `&endDate=${eDate}`;
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">데이터를 불러오는 중입니다...</td></tr>`;
 
     try {
-      const res = await fetch(requestUrl);
+      const res = await fetch(`${GAS_WEBAPP_URL}?action=getHistory&name=${encodeURIComponent(name)}`);
       const data = await res.json();
 
       if (!data || data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="padding:30px; color:#888;">해당 기간에 조회된 근태 기록이 없습니다.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">조회된 데이터가 없습니다.</td></tr>`;
+        return;
+      }
+
+      // 날짜 필터링
+      const filtered = data.filter(item => {
+        if (!start && !end) return true;
+        if (start && item.date < start) return false;
+        if (end && item.date > end) return false;
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">선택한 기간 내 조회 데이터가 없습니다.</td></tr>`;
         return;
       }
 
       let html = "";
-      data.forEach(item => {
-        const inHtml = item.inTime !== "-" ? `<span class="in-time">${item.inTime}</span>` : "-";
-        const outHtml = item.outTime !== "-" ? `<span class="out-time">${item.outTime}</span>` : "-";
-        const leaveHtml = item.leaveInfo !== "-" ? `<span class="leave-badge">${item.leaveInfo}</span>` : "-";
-
+      filtered.forEach(row => {
         html += `
           <tr>
-            <td><b>${item.date}</b></td>
-            <td>${item.name}</td>
-            <td>${inHtml}</td>
-            <td>${outHtml}</td>
-            <td>${leaveHtml}</td>
-            <td>${item.note || "-"}</td>
-            <td>${item.ip || "-"}</td>
-            <td>${item.device || "-"}</td>
+            <td><b>${row.date}</b></td>
+            <td>${row.name || name}</td>
+            <td style="color: #28a745; font-weight: bold;">${row.inTime || '-'}</td>
+            <td style="color: #dc3545; font-weight: bold;">${row.outTime || '-'}</td>
+            <td>${row.leaveInfo !== '-' ? `<span style="color:#007bff; font-weight:bold;">[${row.leaveInfo}]</span>` : '-'}</td>
+            <td>${row.note || '-'}</td>
+            <td style="font-size:12px; color:#64748b;">${row.device || '-'}</td>
           </tr>
         `;
       });
@@ -148,8 +299,7 @@
       tbody.innerHTML = html;
 
     } catch (err) {
-      alert("내역을 불러오는 중 오류가 발생했습니다.");
-      tbody.innerHTML = `<tr><td colspan="8" style="padding:30px; color:red;">데이터 로딩 실패</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="empty-msg" style="color:red;">데이터를 불러오는 중 오류가 발생했습니다.</td></tr>`;
     }
   }
 </script>
