@@ -348,24 +348,32 @@
     }
   }
 
-  // 💡 PC 전원 종료 및 창 닫힘 시 자동 퇴근 감지 전송 (sendBeacon)
-  window.addEventListener("pagehide", () => {
-    const userName = localStorage.getItem("lastUserName");
-    if (!userName) return;
+  // 💡 수정된 창 닫힘(pagehide) 이벤트 로직
+window.addEventListener("pagehide", () => {
+  const userName = localStorage.getItem("lastUserName");
+  if (!userName) return;
 
-    const payload = JSON.stringify({
-      action: "checkOut",
-      userName: userName,
-      notes: "PC 자동 종료 퇴근",
-      ip: userIp,
-      device: getDeviceInfo()
-    });
+  const todayStr = getTodayStr();
+  const savedStatus = localStorage.getItem(`attendance_${userName}_${todayStr}`);
 
-    if (navigator.sendBeacon) {
-      const blob = new Blob([payload], { type: 'text/plain;charset=utf-8' });
-      navigator.sendBeacon(GAS_WEBAPP_URL, blob);
-    }
+  // 1. 이미 출근 완료(checkedIn)된 당일 아침 자동 닫힘일 때는 퇴근 요청을 쏘지 않음
+  // 2. 이미 퇴근 완료(completed)된 상태에서도 중복 전송 방지
+  if (savedStatus === "completed") return;
+
+  // 출근 등록 후 최소 1분 이상 지난 상태에서 창이 닫히거나 전원이 꺼질 때만 퇴근 전송
+  const payload = JSON.stringify({
+    action: "checkOut",
+    userName: userName,
+    notes: "PC 자동 종료 퇴근",
+    ip: userIp,
+    device: getDeviceInfo()
   });
+
+  if (navigator.sendBeacon) {
+    const blob = new Blob([payload], { type: 'text/plain;charset=utf-8' });
+    navigator.sendBeacon(GAS_WEBAPP_URL, blob);
+  }
+});
 
   function openOutstationModal() {
     pauseAutoClose();
