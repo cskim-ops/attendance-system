@@ -13,8 +13,9 @@
       padding: 20px;
       color: #333;
     }
+    /* 📐 화면 창 크기(폭)를 500px에서 580px로 여유 있게 확대 */
     .container {
-      max-width: 500px;
+      max-width: 580px;
       margin: 10px auto 30px auto;
       background: #ffffff;
       padding: 30px;
@@ -44,6 +45,30 @@
       font-size: 14px;
     }
     textarea { resize: vertical; }
+
+    /* 📅 월간/기간 퀵 선택 버튼 스타일 */
+    .quick-btn-group {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .btn-quick {
+      flex: 1;
+      padding: 8px;
+      font-size: 12px;
+      font-weight: bold;
+      background-color: #e2e8f0;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-quick:hover {
+      background-color: #cbd5e1;
+      color: #1e293b;
+    }
+
     .btn-group {
       display: flex;
       gap: 10px;
@@ -74,7 +99,7 @@
 
     #topBanner {
       display: none;
-      max-width: 500px;
+      max-width: 580px;
       margin: 0 auto 10px auto;
       padding: 12px;
       background-color: #e8f4fe;
@@ -109,7 +134,7 @@
       padding: 25px;
       border-radius: 10px;
       width: 90%;
-      max-width: 420px;
+      max-width: 450px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     }
     .modal-actions {
@@ -151,26 +176,41 @@
   <button class="btn btn-outstation" onclick="pauseAutoClose(); openOutstationModal();">📝 사외근무 (현장출퇴근 / 외근 / 직퇴) 신청</button>
 </div>
 
-<!-- 팝업 모달창 -->
+<!-- 팝업 모달창 (사외근무 신청 & 기간/월간 선택 기능 지원) -->
 <div id="outstationModal" class="modal-overlay">
   <div class="modal-content" style="text-align: left;">
     <h3 style="margin-top:0; color:#2c3e50;">📝 사외근무 (현장출퇴근/외근) 신청</h3>
+    
     <div class="form-group">
       <label for="reqName">성함</label>
       <input type="text" id="reqName" placeholder="성함 입력">
     </div>
+    
     <div class="form-group">
       <label for="reqEmail">승인 결과 수신 이메일</label>
       <input type="email" id="reqEmail" placeholder="결과를 통보받을 이메일 주소">
     </div>
+
+    <!-- 📅 날짜 선택 및 월간/기간 퀵 버튼 -->
     <div class="form-group">
-      <label for="reqDate">사외근무 예정 일자</label>
-      <input type="date" id="reqDate">
+      <label>사외근무 일자 선택</label>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <input type="date" id="reqStartDate">
+        <span>~</span>
+        <input type="date" id="reqEndDate">
+      </div>
+      <div class="quick-btn-group">
+        <button type="button" class="btn-quick" onclick="setDateRange('today')">오늘</button>
+        <button type="button" class="btn-quick" onclick="setDateRange('thisMonth')">이번 달 전체</button>
+        <button type="button" class="btn-quick" onclick="setDateRange('lastMonth')">지난 달 전체</button>
+      </div>
     </div>
+
     <div class="form-group">
       <label for="reqReason">사유 및 현장 장소</label>
       <textarea id="reqReason" rows="3" placeholder="예: 오전 OO현장 직접 출근 / 외부 미팅 후 현지 퇴근"></textarea>
     </div>
+
     <div class="modal-actions">
       <button class="btn-modal-cancel" onclick="closeOutstationModal()">취소</button>
       <button id="btnSubmitOutstation" class="btn-modal-submit" onclick="submitOutstationRequest()">승인 요청 제출</button>
@@ -179,7 +219,7 @@
 </div>
 
 <script>
-  // ⚠️ 본인의 실제 배포된 앱스 스크립트 웹앱 URL입니다.
+  // ⚠️ 본인의 실제 배포된 앱스 스크립트 웹앱 URL
   const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwFDw0Ry1hHzMzBx18jVCv-pWY6Bd32jPQKGjGRkrxLyMSIp9T0d939peM8GTCXhFOH/exec";
 
   let userIp = "-";
@@ -214,6 +254,42 @@
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  // 🗓️ 오늘 / 이번 달 / 지난 달 기간 자동 세팅 함수
+  function setDateRange(type) {
+    const now = new Date();
+    const startEl = document.getElementById("reqStartDate");
+    const endEl = document.getElementById("reqEndDate");
+
+    if (type === 'today') {
+      const today = getTodayStr();
+      startEl.value = today;
+      endEl.value = today;
+    } else if (type === 'thisMonth') {
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      
+      startEl.value = formatDateStr(firstDay);
+      endEl.value = formatDateStr(lastDay);
+    } else if (type === 'lastMonth') {
+      const year = now.getFullYear();
+      const month = now.getMonth() - 1;
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+
+      startEl.value = formatDateStr(firstDay);
+      endEl.value = formatDateStr(lastDay);
+    }
+  }
+
+  function formatDateStr(dateObj) {
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const d = String(dateObj.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
 
   function pauseAutoClose() {
@@ -298,8 +374,7 @@
   });
 
   window.addEventListener("DOMContentLoaded", () => {
-    // 기본 외근 날짜를 오늘로 설정
-    document.getElementById("reqDate").value = getTodayStr();
+    setDateRange('today');
     initAutoAttendance();
   });
 
@@ -363,16 +438,17 @@
     document.getElementById("outstationModal").style.display = "none";
   }
 
-  // 📝 사외근무 승인 요청 전송 (관리자 이메일 발송 연동)
+  // 📝 사외근무 승인 요청 전송
   async function submitOutstationRequest() {
     const name = document.getElementById("reqName").value.trim();
     const email = document.getElementById("reqEmail").value.trim();
-    const date = document.getElementById("reqDate").value;
+    const startDate = document.getElementById("reqStartDate").value;
+    const endDate = document.getElementById("reqEndDate").value;
     const reason = document.getElementById("reqReason").value.trim();
     const submitBtn = document.getElementById("btnSubmitOutstation");
 
-    if (!name || !email || !date || !reason) {
-      alert("성함, 수신 이메일, 사외근무 일자, 사유를 모두 입력해 주세요.");
+    if (!name || !email || !startDate || !endDate || !reason) {
+      alert("성함, 수신 이메일, 근무 날짜, 사유를 모두 입력해 주세요.");
       return;
     }
 
@@ -383,8 +459,8 @@
       action: "requestLeaveApproval",
       userName: name,
       userEmail: email,
-      startDate: date,
-      endDate: date,
+      startDate: startDate,
+      endDate: endDate,
       leaveType: "사외근무(현장출퇴근/외근)",
       notes: reason
     };
