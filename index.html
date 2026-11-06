@@ -181,24 +181,27 @@
 
 <script>
   // ⚠️ 본인의 실제 배포된 앱스 스크립트 웹앱 URL
-  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyc4HzNbc0EV1f7lUhXPkSN-egL8fFGgPdSGwdQS1RO2eATnCZSIlnFv5hwbtwVz_5I/exec";
+  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzHSM4SO1wzHbsOE402Hbqt-GLsYU-VS64ghkaBJzfGBFWspnweT0SnjoTIucjVPSM0/exec";
 
   let userIp = "-";
   let autoCloseTimer = null;
   let countdownInterval = null;
   let isPaused = false;
 
-  // 🌐 1. IP 주소 조회
+  // 🌐 1. IP 주소 수집 (타임아웃 2초 포함으로 전송 직전 동기 실행)
   async function fetchIp() {
     try {
-      const res = await fetch("https://api.ipify.org?format=json");
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), 2000);
+      const res = await fetch("https://api.ipify.org?format=json", { signal: controller.signal });
+      clearTimeout(id);
       const data = await res.json();
-      userIp = data.ip || "-";
+      userIp = data.ip || "IP 수집 불가";
     } catch (e) {
       userIp = "IP 수집 불가";
     }
+    return userIp;
   }
-  fetchIp();
 
   // 📱 2. 디바이스 환경 조회
   function getDeviceInfo() {
@@ -297,7 +300,7 @@
     await sendAttendance('checkIn', true);
   }
 
-  // 🚀 6. 출근 / 퇴근 전송 함수
+  // 🚀 6. 출근 / 퇴근 전송 함수 (IP 조회 완료 후 보증 전송)
   async function sendAttendance(actionType, isAuto = false) {
     const userName = document.getElementById("userName").value.trim();
     const notes = document.getElementById("notes").value.trim();
@@ -311,6 +314,11 @@
 
     localStorage.setItem("lastUserName", userName);
     btnIn.disabled = true;
+
+    // 💡 전송 직전 IP 조회를 확실하게 기다려서 수집
+    if (userIp === "-" || userIp === "IP 수집 불가") {
+      await fetchIp();
+    }
 
     const payload = {
       action: actionType,
@@ -432,8 +440,9 @@
     if (name) localStorage.setItem("lastUserName", name);
   });
 
-  window.addEventListener("DOMContentLoaded", () => {
+  window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("reqDate").value = getTodayStr();
+    await fetchIp(); // 웹페이지 오픈 시 IP부터 확실하게 로딩
     initAutoAttendance();
   });
 </script>
