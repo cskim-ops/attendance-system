@@ -182,7 +182,7 @@
 
 <script>
   // ⚠️ 본인의 실제 배포된 앱스 스크립트 웹앱 URL입니다.
-  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxdGaC1br_BkCUk_MVPzDOPYNJ4uNGnkgXrNq_WS3X-UuUHKDu65Sim_iIASTiq1D1b/exec";
+  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzPIdbmW3XBgMaN9ifDB-P1qboe_vb0mSzLpVxbeJsdKx_NLQPNGdcPJpDizYP3ksKA/exec";
 
   let userIp = "-";
   let autoCloseTimer = null;
@@ -407,6 +407,37 @@
       submitBtn.innerText = "승인 요청 제출";
     }
   }
+
+// 💡 퇴근 시간 기준 설정 (예: 17시 = 오후 5시)
+const EXIT_CHECK_HOUR = 17;
+
+window.addEventListener('beforeunload', function (event) {
+  const now = new Date();
+  const currentHour = now.getHours();
+
+  // 설정한 퇴근 시간 이후에 창을 닫을 경우 작동
+  if (currentHour >= EXIT_CHECK_HOUR) {
+    const name = document.getElementById("empName")?.value || "";
+    const dept = document.getElementById("empDept")?.value || "";
+
+    if (name) {
+      // 구글 앱스 스크립트 Web App URL
+      const webAppUrl = "YOUR_WEB_APP_URL_HERE"; // 👈 배포된 Web App URL 입력
+      
+      const payload = JSON.stringify({
+        action: "checkout",
+        name: name,
+        dept: dept,
+        type: "자동감지(창닫힘)",
+        timestamp: now.toISOString()
+      });
+
+      // 브라우저 프로세스가 닫혀도 끝까지 데이터를 전송하는 sendBeacon 사용
+      navigator.sendBeacon(webAppUrl, payload);
+    }
+  }
+});  
+  
 </script>
 
 </body>
