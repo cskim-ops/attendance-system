@@ -181,7 +181,7 @@
 
 <script>
   // ⚠️ 본인의 실제 배포된 앱스 스크립트 웹앱 URL
-  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx5M2Dt7L0up5o4O-qp3E6mksJIXOyyFhR5s1_ZQ5YDSQG4mf6tFIkaOXPmUCYUh7y9/exec";
+  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx8WMOshxIsDfgPCm_QXU6SweH2ukWGwL0OWFRMll8FN2SCD2IKaMaosMT7naDE5e5M/exec";
 
   let userIp = "-";
   let autoCloseTimer = null;
@@ -362,27 +362,31 @@
     }
   }
 
-  // 🚪 7. 퇴근 시간(17시) 이후 창 닫을 때 백그라운드 자동 퇴근 처리 (sendBeacon)
-  const EXIT_CHECK_HOUR = 17;
+ // 🌙 창을 닫거나 이동할 때 백그라운드 퇴근 신호 전송
+window.addEventListener("beforeunload", function (e) {
+  const userName = localStorage.getItem("lastUserName") || document.getElementById("userName").value.trim();
+  const todayStr = getTodayStr();
 
-  window.addEventListener('beforeunload', function (event) {
-    const now = new Date();
-    if (now.getHours() >= EXIT_CHECK_HOUR) {
-      const userName = document.getElementById("userName")?.value.trim() || "";
+  // 이미 오늘 퇴근 처리가 완료된 경우 전송하지 않음
+  if (!userName || localStorage.getItem(`attendance_${userName}_${todayStr}`) === "completed") {
+    return;
+  }
 
-      if (userName) {
-        const payload = JSON.stringify({
-          action: "checkOut",
-          userName: userName,
-          notes: "자동감지(창닫힘)",
-          ip: userIp,
-          device: getDeviceInfo()
-        });
+  // 17시 이후 창을 닫을 때 자동 퇴근 처리
+  const currentHour = new Date().getHours();
+  if (currentHour >= 17) {
+    const payload = JSON.stringify({
+      action: "autoCheckOut",        // 👈 백엔드에 창닫힘 자동퇴근 신호 전송
+      userName: userName,
+      notes: "자동감지(창닫힘)",       // 👈 E열(비고)로 들어갈 텍스트만 전달
+      ip: userIp,
+      device: getDeviceInfo()
+    });
 
-        navigator.sendBeacon(GAS_WEBAPP_URL, payload);
-      }
-    }
-  });
+    navigator.sendBeacon(GAS_WEBAPP_URL, payload);
+    localStorage.setItem(`attendance_${userName}_${todayStr}`, "completed");
+  }
+});
 
   // 📝 8. 사외근무 모달 관련
   function openOutstationModal() {
