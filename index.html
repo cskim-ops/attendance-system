@@ -13,7 +13,6 @@
       padding: 20px;
       color: #333;
     }
-    /* 📐 출퇴근 폼 폭을 원래 컴팩트한 500px로 세팅 */
     .container {
       max-width: 500px;
       margin: 10px auto 30px auto;
@@ -181,14 +180,15 @@
 </div>
 
 <script>
-  // ⚠️ 본인의 실제 배포된 앱스 스크립트 웹앱 URL입니다.
-  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzPIdbmW3XBgMaN9ifDB-P1qboe_vb0mSzLpVxbeJsdKx_NLQPNGdcPJpDizYP3ksKA/exec";
+  // ⚠️ 본인의 실제 배포된 앱스 스크립트 웹앱 URL
+  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyc4HzNbc0EV1f7lUhXPkSN-egL8fFGgPdSGwdQS1RO2eATnCZSIlnFv5hwbtwVz_5I/exec";
 
   let userIp = "-";
   let autoCloseTimer = null;
   let countdownInterval = null;
   let isPaused = false;
 
+  // 🌐 1. IP 주소 조회
   async function fetchIp() {
     try {
       const res = await fetch("https://api.ipify.org?format=json");
@@ -200,6 +200,7 @@
   }
   fetchIp();
 
+  // 📱 2. 디바이스 환경 조회
   function getDeviceInfo() {
     const ua = navigator.userAgent;
     let os = "Desktop";
@@ -218,6 +219,7 @@
     return `${year}-${month}-${day}`;
   }
 
+  // ⏸️ 3. 자동 닫힘 타이머 일시 정지
   function pauseAutoClose() {
     isPaused = true;
     if (autoCloseTimer) clearTimeout(autoCloseTimer);
@@ -231,6 +233,7 @@
     }
   }
 
+  // ⏱️ 4. 3초 카운트다운 후 창 닫힘
   function startAutoClose(msgText, seconds) {
     if (isPaused) return;
 
@@ -268,6 +271,7 @@
     }, seconds * 1000);
   }
 
+  // 🔄 5. 자동 출근 실행 함수 (기존 출근 이력 확인)
   async function initAutoAttendance() {
     const nameInput = document.getElementById("userName");
     const savedName = localStorage.getItem("lastUserName");
@@ -293,16 +297,7 @@
     await sendAttendance('checkIn', true);
   }
 
-  document.getElementById("userName").addEventListener("input", function() {
-    const name = this.value.trim();
-    if (name) localStorage.setItem("lastUserName", name);
-  });
-
-  window.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("reqDate").value = getTodayStr();
-    initAutoAttendance();
-  });
-
+  // 🚀 6. 출근 / 퇴근 전송 함수
   async function sendAttendance(actionType, isAuto = false) {
     const userName = document.getElementById("userName").value.trim();
     const notes = document.getElementById("notes").value.trim();
@@ -350,6 +345,29 @@
     }
   }
 
+  // 🚪 7. 퇴근 시간(17시) 이후 창 닫을 때 백그라운드 자동 퇴근 처리 (sendBeacon)
+  const EXIT_CHECK_HOUR = 17;
+
+  window.addEventListener('beforeunload', function (event) {
+    const now = new Date();
+    if (now.getHours() >= EXIT_CHECK_HOUR) {
+      const userName = document.getElementById("userName")?.value.trim() || "";
+
+      if (userName) {
+        const payload = JSON.stringify({
+          action: "checkOut",
+          userName: userName,
+          notes: "자동감지(창닫힘)",
+          ip: userIp,
+          device: getDeviceInfo()
+        });
+
+        navigator.sendBeacon(GAS_WEBAPP_URL, payload);
+      }
+    }
+  });
+
+  // 📝 8. 사외근무 모달 관련
   function openOutstationModal() {
     pauseAutoClose();
     const currentName = document.getElementById("userName").value.trim();
@@ -408,36 +426,16 @@
     }
   }
 
-// 💡 퇴근 시간 기준 설정 (예: 17시 = 오후 5시)
-const EXIT_CHECK_HOUR = 17;
+  // 🎬 9. 이벤트 리스너 세팅
+  document.getElementById("userName").addEventListener("input", function() {
+    const name = this.value.trim();
+    if (name) localStorage.setItem("lastUserName", name);
+  });
 
-window.addEventListener('beforeunload', function (event) {
-  const now = new Date();
-  const currentHour = now.getHours();
-
-  // 설정한 퇴근 시간 이후에 창을 닫을 경우 작동
-  if (currentHour >= EXIT_CHECK_HOUR) {
-    const name = document.getElementById("empName")?.value || "";
-    const dept = document.getElementById("empDept")?.value || "";
-
-    if (name) {
-      // 구글 앱스 스크립트 Web App URL
-      const webAppUrl = "YOUR_WEB_APP_URL_HERE"; // 👈 배포된 Web App URL 입력
-      
-      const payload = JSON.stringify({
-        action: "checkout",
-        name: name,
-        dept: dept,
-        type: "자동감지(창닫힘)",
-        timestamp: now.toISOString()
-      });
-
-      // 브라우저 프로세스가 닫혀도 끝까지 데이터를 전송하는 sendBeacon 사용
-      navigator.sendBeacon(webAppUrl, payload);
-    }
-  }
-});  
-  
+  window.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("reqDate").value = getTodayStr();
+    initAutoAttendance();
+  });
 </script>
 
 </body>
