@@ -181,7 +181,7 @@
 
 <script>
   // ⚠️ 본인의 실제 배포된 앱스 스크립트 웹앱 URL
-  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxsQxeP05iLx4PknfhSU3zhlULbEt8PRqUr9c0llyBdzOtR6QRpFBdtMs29gt7SK7bh/exec";
+  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzYXX12bLufZ4Sg7b5BHWlzjvrtQtPNs6RFY0rgvUdtd2a9PCQKicAIOY_KOYKNZ-BJ/exec";
 
   let userIp = "-";
   let autoCloseTimer = null;
@@ -300,7 +300,7 @@
     await sendAttendance('checkIn', true);
   }
 
-  // 🚀 6. 출근 / 퇴근 전송 함수 (IP 조회 완료 후 보증 전송)
+// 🚀 6. 출근 / 퇴근 전송 함수 (퇴근 시 3초 자동 닫힘 제외 처리)
   async function sendAttendance(actionType, isAuto = false) {
     const userName = document.getElementById("userName").value.trim();
     const notes = document.getElementById("notes").value.trim();
@@ -339,11 +339,20 @@
       if (actionType === 'checkIn') {
         localStorage.setItem(`attendance_${userName}_${todayStr}`, "checkedIn");
         btnIn.innerText = "☀️ 출근 완료됨";
-        startAutoClose("☀️ 출근 기록이 정상 등록되었습니다!", 3);
+        startAutoClose("☀️ 출근 기록이 정상 등록되었습니다!", 3); // 출근 시에만 3초 후 자동 닫힘 유지
       } else {
         localStorage.setItem(`attendance_${userName}_${todayStr}`, "completed");
         btnOut.disabled = false;
-        startAutoClose("🌙 퇴근 기록이 정상 등록되었습니다!", 3);
+        
+        // 🌙 퇴근 시: 3초 자동 닫힘 타이머를 실행하지 않고 배너만 안내로 변경
+        pauseAutoClose(); // 혹시 진행 중인 카운트다운이 있다면 멈춤
+        const banner = document.getElementById("topBanner");
+        if (banner) {
+          banner.style.backgroundColor = "#e8f4fe";
+          banner.style.borderColor = "#b6d4fe";
+          banner.style.display = "block";
+          banner.innerHTML = "<b>🌙 퇴근 등록이 완료되었습니다. (업무 종료 후 창을 닫아주시면 됩니다)</b>";
+        }
       }
       document.getElementById("notes").value = "";
 
