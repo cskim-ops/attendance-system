@@ -181,7 +181,7 @@
 
 <script>
   // ⚠️ 본인의 실제 배포된 앱스 스크립트 웹앱 URL
-  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx8WMOshxIsDfgPCm_QXU6SweH2ukWGwL0OWFRMll8FN2SCD2IKaMaosMT7naDE5e5M/exec";
+  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzW3NWqczmAZSPkLlkRcFYa2U-wjY6dkzpnUHZWSkCKHWmYMNEStaRD-RJF3yIEBCVd/exec";
 
   let userIp = "-";
   let autoCloseTimer = null;
@@ -301,9 +301,8 @@
   }
 
 // 🚀 6. 출근 / 퇴근 전송 함수 (퇴근 시 3초 자동 닫힘 제외 처리)
-  async function sendAttendance(actionType, isAuto = false) {
+ async function sendAttendance(actionType, isAuto = false) {
     const userName = document.getElementById("userName").value.trim();
-    const notes = document.getElementById("notes").value.trim();
     const btnIn = document.getElementById("btnCheckIn");
     const btnOut = document.getElementById("btnCheckOut");
 
@@ -311,6 +310,17 @@
       alert("성함을 입력해 주세요.");
       return;
     }
+
+    // 💡 폼 제출 버튼 즉시 중복 클릭 방지 (disabled 처리)
+    if (actionType === 'checkIn') {
+      if (btnIn.disabled) return; // 이미 클릭 중이면 중단
+      btnIn.disabled = true;
+    } else {
+      if (btnOut.disabled) return;
+      btnOut.disabled = true;
+    }
+
+    // ... (이하 동일)
 
     localStorage.setItem("lastUserName", userName);
     btnIn.disabled = true;
