@@ -313,17 +313,20 @@
       }
     });
 
-    // 🌙 [3] 17시 20분 이후 창을 닫을 때 백그라운드 자동 퇴근 전송
+   // 🌙 [3] 17시 20분 이후 창을 닫을 때 백그라운드 자동 퇴근 전송 (재접속/중복 닫기 허용)
     function triggerAutoCheckOut() {
       const userNameInput = document.getElementById("userName");
       const userName = (userNameInput ? userNameInput.value.trim() : "") || localStorage.getItem("lastUserName") || "";
       const todayStr = getTodayStr();
 
-      if (!userName || localStorage.getItem(`attendance_${userName}_${todayStr}`) === "completed") return;
+      // 성함 정보가 없으면 중단
+      if (!userName) return;
 
       const now = new Date();
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
+      
+      // 17시 20분 이후 판단 (17시 20분 이상 또는 18시 이후)
       const isAfter1720 = (currentHour === 17 && currentMinute >= 20) || (currentHour > 17);
 
       if (isAfter1720) {
@@ -335,6 +338,7 @@
           device: getDeviceInfo()
         });
 
+        // 윈도우/맥 브라우저 닫힘 통신 3중 안전 전송
         if (navigator.sendBeacon) {
           const blob = new Blob([payload], { type: 'text/plain;charset=utf-8' });
           navigator.sendBeacon(GAS_WEBAPP_URL, blob);
