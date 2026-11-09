@@ -246,7 +246,7 @@
       }
     }
 
-    // 💡 17시 20분 이후 판단 시 구글 시트 새 탭 열기
+    // 💡 17시 20분 이후 판단 시 구글 시트로 이동
     function openSheetIfAfter1720() {
       const now = new Date();
       const currentHour = now.getHours();
@@ -254,7 +254,8 @@
 
       const isAfter1720 = (currentHour === 17 && currentMinute >= 20) || (currentHour > 17);
       if (isAfter1720) {
-        window.open(GOOGLE_SHEET_URL, "_blank");
+        // 팝업 차단을 우회하기 위해 현재 창을 구글 시트로 바로 전환합니다.
+        location.href = GOOGLE_SHEET_URL;
       }
     }
 
