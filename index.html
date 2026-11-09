@@ -30,124 +30,80 @@
       color: #1e293b;
       font-size: 22px;
       text-align: center;
-      margin-bottom: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    .form-group {
       margin-bottom: 20px;
     }
-    label {
-      display: block;
-      font-size: 14px;
-      font-weight: bold;
-      color: #475569;
-      margin-bottom: 8px;
-    }
-    input[type="text"], input[type="email"], input[type="date"], textarea {
-      width: 100%;
-      padding: 14px;
-      border: 1px solid #e2e8f0;
-      border-radius: 10px;
-      font-size: 15px;
-      box-sizing: border-box;
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    input[type="text"]:focus, input[type="email"]:focus, input[type="date"]:focus, textarea:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-    }
-    textarea { resize: vertical; }
-
-    .btn-group {
-      display: flex;
-      gap: 12px;
-      margin-top: 10px;
-    }
-    button {
-      flex: 1;
-      padding: 16px;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background-color 0.2s, opacity 0.2s, transform 0.1s;
-      color: #ffffff;
-    }
-    button:active { transform: scale(0.98); }
-    button:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-      background-color: #64748b !important;
-    }
-    .btn-in { background-color: #16a34a; }
-    .btn-in:hover:not(:disabled) { background-color: #15803d; }
-    .btn-out { background-color: #dc2626; }
-    .btn-out:hover:not(:disabled) { background-color: #b91c1c; }
     
-    .btn-outstation {
-      width: 100%;
-      background-color: #475569;
-      margin-top: 12px;
-      padding: 12px;
-      font-size: 14px;
-    }
-    .btn-outstation:hover:not(:disabled) { background-color: #334155; }
-
-    .info-text {
-      font-size: 12px;
-      color: #94a3b8;
-      text-align: center;
-      margin-top: 24px;
-      line-height: 1.6;
-    }
-
-    /* 팝업 모달 스타일 */
-    .modal-overlay {
+    /* 📢 출근 성공 후 상단 알림 배너 */
+    #topBanner {
       display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(15, 23, 42, 0.5);
-      backdrop-filter: blur(4px);
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
+      padding: 12px;
+      background-color: #e8f4fe;
+      border: 1px solid #b6d4fe;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 13.5px;
+      color: #0c5460;
+      margin-bottom: 20px;
     }
-    .modal-content {
-      background: white;
-      padding: 30px;
-      border-radius: 16px;
-      width: 90%;
-      max-width: 420px;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    .pause-badge {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 2px 6px;
+      background: #dc2626;
+      color: white;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
     }
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 24px;
+
+    .form-group { margin-bottom: 20px; }
+    label { display: block; font-size: 14px; font-weight: bold; color: #475569; margin-bottom: 8px; }
+    input[type="text"], input[type="email"], input[type="date"], textarea {
+      width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 15px; outline: none;
     }
-    .btn-modal-cancel { background: #94a3b8; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+    .btn-group { display: flex; gap: 12px; margin-top: 10px; }
+    button {
+      flex: 1; padding: 16px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; color: #ffffff;
+    }
+    button:disabled { opacity: 0.55; cursor: not-allowed; background-color: #64748b !important; }
+    .btn-in { background-color: #16a34a; }
+    .btn-out { background-color: #dc2626; }
+    .btn-outstation { width: 100%; background-color: #475569; margin-top: 12px; padding: 12px; font-size: 14px; }
+
+    .info-text { font-size: 12px; color: #94a3b8; text-align: center; margin-top: 24px; line-height: 1.6; }
+
+    /* 모달 */
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 1000;
+    }
+    .modal-content { background: white; padding: 30px; border-radius: 16px; width: 90%; max-width: 420px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+    .btn-modal-cancel { background: #94a3b8; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; }
     .btn-modal-submit { background: #2563eb; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; }
   </style>
 </head>
 <body>
 
   <div class="card">
+    <!-- 📢 상단 카운트다운 배너 -->
+    <div id="topBanner">
+      <span id="bannerText">☀️ 출근 처리 중입니다...</span> 
+      <b>(<span id="countdown">3</span>초 후 창 닫힘)</b>
+      <span class="pause-badge" onclick="pauseAutoClose()">창 유지하기 ⏸️</span>
+    </div>
+
     <h2>🏢 사내 출퇴근 등록</h2>
     
     <div class="form-group">
       <label for="userName">성함</label>
-      <input type="text" id="userName" placeholder="성함을 입력하세요 (예: 홍길동)" autocomplete="off">
+      <input type="text" id="userName" placeholder="성함을 입력하세요 (예: 홍길동)" autocomplete="off" onfocus="pauseAutoClose()">
     </div>
 
     <div class="form-group">
       <label for="notes">비고 (특이사항)</label>
-      <input type="text" id="notes" placeholder="특이사항 입력 시 기록에 포함됩니다." autocomplete="off">
+      <input type="text" id="notes" placeholder="특이사항 입력 시 기록에 포함됩니다." autocomplete="off" onfocus="pauseAutoClose()">
     </div>
 
     <div class="btn-group">
@@ -155,10 +111,10 @@
       <button id="btnCheckOut" class="btn-out">퇴근하기</button>
     </div>
 
-    <button type="button" class="btn-outstation" onclick="openOutstationModal()">📝 사외근무 / 직퇴 사전 신청</button>
+    <button type="button" class="btn-outstation" onclick="pauseAutoClose(); openOutstationModal();">📝 사외근무 / 직퇴 사전 신청</button>
 
     <p class="info-text">
-      ※ 17시 20분 이후 퇴근 처리 시 출퇴근 관리 시트 창이 자동으로 열립니다.<br>
+      ※ 17시 20분 이후 이 창을 닫으면 퇴근 처리가 자동 기록됩니다.<br>
       ※ 입력하신 정보와 접속 IP/디바이스 정보가 함께 기록됩니다.
     </p>
   </div>
@@ -191,13 +147,12 @@
   </div>
 
   <script>
-    // 🔗 구글 앱스 스크립트 웹앱 URL (본인의 실제 URL로 확인 및 유지)
     const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyVkKoLxx6emN_Bz8gpiLUlsg_PBUjaSUydZZcXFCZzgiei9lXoW8WwjkgBQowZf2I-/exec";
 
-    // 📊 모든 직원이 17:20 이후 퇴근 시 이동할 중앙 구글 시트 URL (실제 시트 주소로 교체)
-    const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/실제시트ID입력/edit#gid=0";
-
     let userIp = "-";
+    let autoCloseTimer = null;
+    let countdownInterval = null;
+    let isPaused = false;
 
     // 🌐 IP 주소 추적
     fetch('https://api.ipify.org?format=json')
@@ -205,7 +160,6 @@
       .then(data => { userIp = data.ip || "-"; })
       .catch(() => { userIp = "-"; });
 
-    // 📱 디바이스 정보 추적
     function getDeviceInfo() {
       const ua = navigator.userAgent;
       if (/mobile/i.test(ua)) return "Mobile Device";
@@ -215,74 +169,91 @@
       return "Desktop (Other)";
     }
 
-    // 📅 오늘 날짜 스트링 (yyyy-MM-dd)
     function getTodayStr() {
       const d = new Date();
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
-    // 💡 당일 이미 출근했는지 검사하여 [출근하기] 버튼 상태 제어
+    // ⏱️ 3초 후 자동 닫기 타이머 제어
+    function pauseAutoClose() {
+      isPaused = true;
+      if (autoCloseTimer) clearTimeout(autoCloseTimer);
+      if (countdownInterval) clearInterval(countdownInterval);
+      
+      const banner = document.getElementById("topBanner");
+      if (banner) {
+        banner.style.backgroundColor = "#fff3cd";
+        banner.style.borderColor = "#ffebaa";
+        banner.innerHTML = "<b>⏸️ 창 자동 닫힘이 일시 정지되었습니다.</b>";
+      }
+    }
+
+    function startAutoClose(msgText, seconds) {
+      if (isPaused) return;
+
+      if (autoCloseTimer) clearTimeout(autoCloseTimer);
+      if (countdownInterval) clearInterval(countdownInterval);
+
+      const banner = document.getElementById("topBanner");
+      const bannerText = document.getElementById("bannerText");
+      const countEl = document.getElementById("countdown");
+      
+      if (banner && bannerText && countEl) {
+        bannerText.innerText = msgText;
+        let sec = seconds;
+        countEl.innerText = sec;
+        banner.style.display = "block";
+
+        countdownInterval = setInterval(() => {
+          sec--;
+          if (sec > 0) {
+            countEl.innerText = sec;
+          } else {
+            clearInterval(countdownInterval);
+          }
+        }, 1000);
+      }
+
+      autoCloseTimer = setTimeout(() => {
+        if (!isPaused) {
+          window.close();
+          setTimeout(() => {
+            window.open('', '_self', '');
+            window.close();
+          }, 100);
+        }
+      }, seconds * 1000);
+    }
+
+    // 💡 당일 출근 상태 검사 및 버튼 비활성화
     function checkAttendanceState() {
       const userName = document.getElementById("userName").value.trim();
       const btnIn = document.getElementById("btnCheckIn");
       const todayStr = getTodayStr();
 
-      if (!userName) {
-        btnIn.disabled = false;
-        btnIn.innerText = "출근하기";
-        return;
-      }
+      if (!userName) return;
 
       const status = localStorage.getItem(`attendance_${userName}_${todayStr}`);
       if (status === "checkedIn" || status === "completed") {
         btnIn.disabled = true;
         btnIn.innerText = "☀️ 출근 완료됨";
-      } else {
-        btnIn.disabled = false;
-        btnIn.innerText = "출근하기";
       }
     }
 
-    // 💡 17시 20분 이후 판단 시 구글 시트 새 탭 열기
-    function openSheetIfAfter1720() {
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-
-      const isAfter1720 = (currentHour === 17 && currentMinute >= 20) || (currentHour > 17);
-      if (isAfter1720) {
-        window.open(GOOGLE_SHEET_URL, "_blank");
-      }
-    }
-
-    // 🟢 [1] 출근 버튼 클릭 이벤트
+    // 🟢 [1] 출근 처리 (3초 후 창 자동 닫힘)
     document.getElementById("btnCheckIn").addEventListener("click", async function () {
       const userNameInput = document.getElementById("userName");
       const userName = userNameInput.value.trim();
       const notes = document.getElementById("notes").value.trim();
       const btnIn = this;
 
-      if (!userName) {
-        alert("성함을 입력해 주세요.");
-        userNameInput.focus();
-        return;
-      }
-
+      if (!userName) { alert("성함을 입력해 주세요."); return; }
       if (btnIn.disabled) return;
       btnIn.disabled = true;
 
       localStorage.setItem("lastUserName", userName);
 
-      const payload = {
-        action: "checkIn",
-        userName: userName,
-        notes: notes || "-",
-        ip: userIp,
-        device: getDeviceInfo()
-      };
+      const payload = { action: "checkIn", userName: userName, notes: notes || "-", ip: userIp, device: getDeviceInfo() };
 
       try {
         const response = await fetch(GAS_WEBAPP_URL, {
@@ -292,48 +263,36 @@
         });
 
         if (response.ok) {
-          alert(`${userName} 님, 출근 처리가 완료되었습니다.`);
-          
-          // 오늘 출근 상태 로컬 저장 및 버튼 비활성화 전환
           const todayStr = getTodayStr();
           localStorage.setItem(`attendance_${userName}_${todayStr}`, "checkedIn");
           checkAttendanceState();
-
+          
+          // 💡 출근 완료 시 3초 후 창 자동 닫기 실행
+          startAutoClose("☀️ 출근 처리가 완료되었습니다!", 3);
         } else {
-          alert("출근 처리 중 오류가 발생했습니다.");
+          alert("출근 처리 오류가 발생했습니다.");
           btnIn.disabled = false;
         }
       } catch (err) {
-        alert("통신 오류가 발생했습니다: " + err.message);
+        alert("통신 오류 발생: " + err.message);
         btnIn.disabled = false;
       }
     });
 
-    // 🔴 [2] 퇴근 버튼 클릭 이벤트
+    // 🔴 [2] 수동 퇴근 처리
     document.getElementById("btnCheckOut").addEventListener("click", async function () {
       const userNameInput = document.getElementById("userName");
       const userName = userNameInput.value.trim();
       const notes = document.getElementById("notes").value.trim();
       const btnOut = this;
 
-      if (!userName) {
-        alert("성함을 입력해 주세요.");
-        userNameInput.focus();
-        return;
-      }
-
+      if (!userName) { alert("성함을 입력해 주세요."); return; }
       if (btnOut.disabled) return;
       btnOut.disabled = true;
 
       localStorage.setItem("lastUserName", userName);
 
-      const payload = {
-        action: "checkOut",
-        userName: userName,
-        notes: notes || "-",
-        ip: userIp,
-        device: getDeviceInfo()
-      };
+      const payload = { action: "checkOut", userName: userName, notes: notes || "-", ip: userIp, device: getDeviceInfo() };
 
       try {
         const response = await fetch(GAS_WEBAPP_URL, {
@@ -343,37 +302,31 @@
         });
 
         if (response.ok) {
-          alert(`${userName} 님, 퇴근 처리가 완료되었습니다.`);
-          
           const todayStr = getTodayStr();
           localStorage.setItem(`attendance_${userName}_${todayStr}`, "completed");
-          checkAttendanceState();
-
-          // 17:20 이후인 경우 구글 시트 새 탭 열기
-          openSheetIfAfter1720();
-
-        } else {
-          alert("퇴근 처리 중 오류가 발생했습니다.");
+          startAutoClose("🌙 퇴근 처리가 완료되었습니다!", 3);
         }
       } catch (err) {
-        alert("통신 오류가 발생했습니다: " + err.message);
+        alert("통신 오류 발생: " + err.message);
       } finally {
         btnOut.disabled = false;
       }
     });
 
-    // 🌙 [3] 17시 이후 PC/창 닫힘 자동 퇴근 감지 (Windows/Mac 및 OS별 종료 처리 3중 보완)
+    // 🌙 [3] 17시 20분 이후 창을 닫을 때 백그라운드 자동 퇴근 전송
     function triggerAutoCheckOut() {
       const userNameInput = document.getElementById("userName");
       const userName = (userNameInput ? userNameInput.value.trim() : "") || localStorage.getItem("lastUserName") || "";
       const todayStr = getTodayStr();
 
-      if (!userName || localStorage.getItem(`attendance_${userName}_${todayStr}`) === "completed") {
-        return;
-      }
+      if (!userName || localStorage.getItem(`attendance_${userName}_${todayStr}`) === "completed") return;
 
-      const currentHour = new Date().getHours();
-      if (currentHour >= 17) {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const isAfter1720 = (currentHour === 17 && currentMinute >= 20) || (currentHour > 17);
+
+      if (isAfter1720) {
         const payload = JSON.stringify({
           action: "autoCheckOut",
           userName: userName,
@@ -398,16 +351,13 @@
       }
     }
 
-    // Windows Chrome/Edge 등 OS별 종료 이벤트 3중 바인딩
     window.addEventListener("beforeunload", triggerAutoCheckOut);
     window.addEventListener("pagehide", triggerAutoCheckOut);
     document.addEventListener("visibilitychange", function () {
-      if (document.visibilityState === "hidden") {
-        triggerAutoCheckOut();
-      }
+      if (document.visibilityState === "hidden") triggerAutoCheckOut();
     });
 
-    // 📝 [4] 사외근무 신청 모달 제어
+    // 사외근무 모달
     function openOutstationModal() {
       const currentName = document.getElementById("userName").value.trim();
       if (currentName) document.getElementById("reqName").value = currentName;
@@ -425,23 +375,12 @@
       const reason = document.getElementById("reqReason").value.trim();
       const submitBtn = document.getElementById("btnSubmitOutstation");
 
-      if (!name || !date || !reason) {
-        alert("성함, 외근 예정 일자, 사유를 모두 입력해 주세요.");
-        return;
-      }
+      if (!name || !date || !reason) { alert("필수 항목을 모두 입력해 주세요."); return; }
 
       submitBtn.disabled = true;
       submitBtn.innerText = "신청 중...";
 
-      const payload = {
-        action: "outstationRequest",
-        userName: name,
-        userEmail: email,
-        leaveType: "사외근무(현장출퇴근/외근)",
-        startDate: date,
-        endDate: date,
-        notes: reason
-      };
+      const payload = { action: "outstationRequest", userName: name, userEmail: email, leaveType: "사외근무(현장출퇴근/외근)", startDate: date, endDate: date, notes: reason };
 
       try {
         await fetch(GAS_WEBAPP_URL, {
@@ -449,10 +388,8 @@
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(payload)
         });
-
         alert("📝 사외근무 사전 신청이 완료되었습니다.");
         closeOutstationModal();
-        document.getElementById("reqReason").value = "";
       } catch (err) {
         alert("신청 중 오류가 발생했습니다.");
       } finally {
@@ -461,15 +398,11 @@
       }
     }
 
-    // 이름 입력란 수정 시 상태 다시 검사
     document.getElementById("userName").addEventListener("input", checkAttendanceState);
 
-    // 페이지 로드 시 이름 자동 입력 및 출근 상태 체크
     window.addEventListener("DOMContentLoaded", () => {
       const savedName = localStorage.getItem("lastUserName");
-      if (savedName) {
-        document.getElementById("userName").value = savedName;
-      }
+      if (savedName) document.getElementById("userName").value = savedName;
       checkAttendanceState();
     });
   </script>
