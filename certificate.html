@@ -323,11 +323,11 @@
         return;
       }
 
-      let html = "";
+    let html = "";
       filtered.forEach(row => {
         const leaveText = (row.leaveInfo && row.leaveInfo !== '-') ? `<span class="leave-badge">[${row.leaveInfo}]</span>` : '-';
         
-        // 💡 IP 주소와 기기 정보 조합 처리
+        // 💡 IP주소와 디바이스 정보를 조합
         const ipDevInfo = row.ipDevice || ((row.ip && row.ip !== "-") ? `${row.ip} / ${row.device}` : (row.device || "-"));
 
         html += `
@@ -338,7 +338,7 @@
             <td class="nowrap" style="color: #dc2626; font-weight: bold;">${row.outTime || '-'}</td>
             <td class="nowrap">${leaveText}</td>
             <td>${row.note || '-'}</td>
-            <td style="font-size:11.5px; color:#64748b;">${ipDevInfo}</td> <!-- 👈 접속 IP / 기기 정보 출력 -->
+            <td style="font-size:11.5px; color:#64748b;">${ipDevInfo}</td> <!-- 👈 여기를 ipDevInfo로 연결 -->
           </tr>
         `;
       });
