@@ -246,21 +246,24 @@
       }
     }
 
-    // 🧪 [테스트용] 17시 40분 이후 구글 시트 이동 함수
+  // 💡 17시 20분 이후 이동 처리 함수 (강력 보완본)
 function openSheetIfAfter1720() {
   const now = new Date();
   const currentHour = now.getHours();
   const currentMinute = now.getMinutes();
 
-  // 💡 테스트 기준: 17시 40분 이상이거나 18시 이후일 때 동작
-  const isAfter1740 = (currentHour === 17 && currentMinute >= 40) || (currentHour > 17);
+  // 17시 20분 이상이거나 18시 이후일 때
+  const isAfter1720 = (currentHour === 17 && currentMinute >= 50) || (currentHour > 17);
 
-  if (isAfter1740) {
-    // 📌 브라우저 팝업 차단 방지를 위해 현재 창을 구글 시트로 직접 전환
-    location.href = GOOGLE_SHEET_URL;
+  if (isAfter1720) {
+    if (GOOGLE_SHEET_URL.indexOf("실제시트ID입력") !== -1) {
+      alert("⚠️ GOOGLE_SHEET_URL에 실제 구글 시트 주소를 입력해 주세요.");
+      return;
+    }
+    // 팝업 차단을 방지하기 위해 현재 창을 구글 시트로 직접 이동
+    window.location.href = GOOGLE_SHEET_URL;
   }
 }
-
     // 🟢 [1] 출근 버튼 클릭 이벤트
     document.getElementById("btnCheckIn").addEventListener("click", async function () {
       const userNameInput = document.getElementById("userName");
