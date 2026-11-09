@@ -147,7 +147,7 @@
   </div>
 
   <script>
-    const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyVkKoLxx6emN_Bz8gpiLUlsg_PBUjaSUydZZcXFCZzgiei9lXoW8WwjkgBQowZf2I-/exec";
+    const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyx7Tvj7OxRcVwqMsBmUV9MabeLc-1YdvKmH0UJt4O2xlDrOXc9xUIt93BvL0FGqKyE/exec";
 
     let userIp = "-";
     let autoCloseTimer = null;
@@ -313,23 +313,30 @@
       }
     });
 
-   // 🌙 [3] 17시 20분 이후 창을 닫을 때 백그라운드 자동 퇴근 전송 (재접속/중복 닫기 허용)
+   // 🌙 [3] 17시 20분 이후 창을 닫을 때 백그라운드 자동 퇴근 전송 (빈행 및 중복 전송 방지)
+    let isAutoSent = false; // 중복 전송 방지 플래그
+
     function triggerAutoCheckOut() {
+      if (isAutoSent) return; // 이미 이벤트 중 하나가 실행되었다면 즉시 차단
+
+      // input 태그에서 성함을 가져오되, 파기되었을 경우 localStorage 값을 우선 사용
+      const savedName = localStorage.getItem("lastUserName") || "";
       const userNameInput = document.getElementById("userName");
-      const userName = (userNameInput ? userNameInput.value.trim() : "") || localStorage.getItem("lastUserName") || "";
+      const userName = (userNameInput && userNameInput.value.trim()) ? userNameInput.value.trim() : savedName;
+      
       const todayStr = getTodayStr();
 
-      // 성함 정보가 없으면 중단
-      if (!userName) return;
+      // 성함 정보가 아예 없는 경우 빈행 생성 방지를 위해 절대 전송하지 않음
+      if (!userName || userName === "") return;
 
       const now = new Date();
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
-      
-      // 17시 20분 이후 판단 (17시 20분 이상 또는 18시 이후)
       const isAfter1720 = (currentHour === 17 && currentMinute >= 20) || (currentHour > 17);
 
       if (isAfter1720) {
+        isAutoSent = true; // 전송 시작 시 플래그 차단
+
         const payload = JSON.stringify({
           action: "autoCheckOut",
           userName: userName,
@@ -338,7 +345,6 @@
           device: getDeviceInfo()
         });
 
-        // 윈도우/맥 브라우저 닫힘 통신 3중 안전 전송
         if (navigator.sendBeacon) {
           const blob = new Blob([payload], { type: 'text/plain;charset=utf-8' });
           navigator.sendBeacon(GAS_WEBAPP_URL, blob);
@@ -355,6 +361,7 @@
       }
     }
 
+    // Windows/Mac 브라우저 닫힘 감지 (3가지 이벤트 중 먼저 발동하는 1개만 실행됨)
     window.addEventListener("beforeunload", triggerAutoCheckOut);
     window.addEventListener("pagehide", triggerAutoCheckOut);
     document.addEventListener("visibilitychange", function () {
