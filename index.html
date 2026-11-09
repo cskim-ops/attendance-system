@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>사내 출퇴근 관리 시스템</title>
+  <title>사내 출퇴근 등록</title>
   <style>
+    * { box-sizing: border-box; }
     body {
       font-family: 'Malgun Gothic', -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: #f8fafc;
@@ -17,11 +18,11 @@
     }
     .card {
       background: #ffffff;
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      padding: 35px 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
       width: 100%;
-      max-width: 420px;
+      max-width: 440px;
       box-sizing: border-box;
     }
     h2 {
@@ -29,7 +30,11 @@
       color: #1e293b;
       font-size: 22px;
       text-align: center;
-      margin-bottom: 24px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
     .form-group {
       margin-bottom: 20px;
@@ -41,19 +46,22 @@
       color: #475569;
       margin-bottom: 8px;
     }
-    input[type="text"] {
+    input[type="text"], input[type="email"], input[type="date"], textarea {
       width: 100%;
-      padding: 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
+      padding: 14px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
       font-size: 15px;
       box-sizing: border-box;
       outline: none;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
-    input[type="text"]:focus {
+    input[type="text"]:focus, input[type="email"]:focus, input[type="date"]:focus, textarea:focus {
       border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     }
+    textarea { resize: vertical; }
+
     .btn-group {
       display: flex;
       gap: 12px;
@@ -61,39 +69,69 @@
     }
     button {
       flex: 1;
-      padding: 14px;
+      padding: 16px;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
-      transition: background-color 0.2s, opacity 0.2s;
+      transition: background-color 0.2s, opacity 0.2s, transform 0.1s;
+      color: #ffffff;
     }
+    button:active { transform: scale(0.98); }
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
-    .btn-in {
-      background-color: #16a34a;
-      color: #ffffff;
+    .btn-in { background-color: #16a34a; }
+    .btn-in:hover:not(:disabled) { background-color: #15803d; }
+    .btn-out { background-color: #dc2626; }
+    .btn-out:hover:not(:disabled) { background-color: #b91c1c; }
+    
+    .btn-outstation {
+      width: 100%;
+      background-color: #475569;
+      margin-top: 12px;
+      padding: 12px;
+      font-size: 14px;
     }
-    .btn-in:hover:not(:disabled) {
-      background-color: #15803d;
-    }
-    .btn-out {
-      background-color: #dc2626;
-      color: #ffffff;
-    }
-    .btn-out:hover:not(:disabled) {
-      background-color: #b91c1c;
-    }
+    .btn-outstation:hover:not(:disabled) { background-color: #334155; }
+
     .info-text {
       font-size: 12px;
       color: #94a3b8;
       text-align: center;
-      margin-top: 20px;
-      line-height: 1.4;
+      margin-top: 24px;
+      line-height: 1.6;
     }
+
+    /* 팝업 모달 스타일 */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(4px);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 420px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 24px;
+    }
+    .btn-modal-cancel { background: #94a3b8; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .btn-modal-submit { background: #2563eb; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -103,7 +141,12 @@
     
     <div class="form-group">
       <label for="userName">성함</label>
-      <input type="text" id="userName" placeholder="이름을 입력하세요 (예: 홍길동)" autocomplete="off">
+      <input type="text" id="userName" placeholder="성함을 입력하세요 (예: 홍길동)" autocomplete="off">
+    </div>
+
+    <div class="form-group">
+      <label for="notes">비고 (특이사항)</label>
+      <input type="text" id="notes" placeholder="특이사항 입력 시 기록에 포함됩니다." autocomplete="off">
     </div>
 
     <div class="btn-group">
@@ -111,28 +154,57 @@
       <button id="btnCheckOut" class="btn-out">퇴근하기</button>
     </div>
 
+    <button type="button" class="btn-outstation" onclick="openOutstationModal()">📝 사외근무 / 직퇴 사전 신청</button>
+
     <p class="info-text">
       ※ 17시 20분 이후 퇴근 처리 시 출퇴근 관리 시트 창이 자동으로 열립니다.<br>
       ※ 입력하신 정보와 접속 IP/디바이스 정보가 함께 기록됩니다.
     </p>
   </div>
 
+  <!-- 사외근무 신청 모달 -->
+  <div id="outstationModal" class="modal-overlay">
+    <div class="modal-content">
+      <h3 style="margin-top:0; color:#1e293b; font-size:18px;">📝 사외근무(직퇴) 사전 신청</h3>
+      <div class="form-group">
+        <label for="reqName">성함</label>
+        <input type="text" id="reqName" placeholder="성함 입력">
+      </div>
+      <div class="form-group">
+        <label for="reqEmail">결과 수신 이메일</label>
+        <input type="email" id="reqEmail" placeholder="결과를 안내받을 이메일 주소">
+      </div>
+      <div class="form-group">
+        <label for="reqDate">외근 예정 일자</label>
+        <input type="date" id="reqDate">
+      </div>
+      <div class="form-group">
+        <label for="reqReason">사유 및 미팅 장소</label>
+        <textarea id="reqReason" rows="3" placeholder="예: OO기업 외부 미팅 후 현지 퇴근"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-modal-cancel" onclick="closeOutstationModal()">취소</button>
+        <button type="button" id="btnSubmitOutstation" class="btn-modal-submit" onclick="submitOutstationRequest()">신청 제출</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // 🔗 구글 앱스 스크립트 웹앱 URL (본인 URL로 확인 및 유지)
+    // 🔗 구글 앱스 스크립트 웹앱 URL (본인의 실제 URL로 확인 및 유지)
     const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxSA-PHHCFJPwlm0FobT_gPk1_KRnR9_MyksBEN7EYkaXDcjTonxStVSgx_1TP0yrtb/exec";
 
     // 📊 모든 직원이 17:20 이후 퇴근 시 이동할 중앙 구글 시트 URL (실제 시트 주소로 교체)
-    const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1UqHcuu4K7R8a_z5H9TOfSznh9BonXaXEHTTUxx4Bk-4/edit#gid=0";
+    const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Arji_k-XX5S79F2MzBKnOrEurWL1DQWYoAh_UPaGbio/edit#gid=0";
 
     let userIp = "-";
 
-    // 🌐 접속 IP 추출
+    // 🌐 IP 주소 추적
     fetch('https://api.ipify.org?format=json')
       .then(res => res.json())
-      .then(data => { userIp = data.ip; })
+      .then(data => { userIp = data.ip || "-"; })
       .catch(() => { userIp = "-"; });
 
-    // 📱 디바이스 정보 추출
+    // 📱 디바이스 정보 추적
     function getDeviceInfo() {
       const ua = navigator.userAgent;
       if (/mobile/i.test(ua)) return "Mobile Device";
@@ -151,15 +223,13 @@
       return `${year}-${month}-${day}`;
     }
 
-    // 💡 17시 20분 이후인지 판단하여 구글 시트 새 탭 열기
+    // 💡 17시 20분 이후 판단 시 구글 시트 새 탭 열기
     function openSheetIfAfter1720() {
       const now = new Date();
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
 
-      // 17시 20분 이상이거나 18시 이후일 때
       const isAfter1720 = (currentHour === 17 && currentMinute >= 20) || (currentHour > 17);
-
       if (isAfter1720) {
         window.open(GOOGLE_SHEET_URL, "_blank");
       }
@@ -169,6 +239,7 @@
     document.getElementById("btnCheckIn").addEventListener("click", async function () {
       const userNameInput = document.getElementById("userName");
       const userName = userNameInput.value.trim();
+      const notes = document.getElementById("notes").value.trim();
       const btnIn = this;
 
       if (!userName) {
@@ -180,13 +251,12 @@
       if (btnIn.disabled) return;
       btnIn.disabled = true;
 
-      // 이름 로컬 저장
       localStorage.setItem("lastUserName", userName);
 
       const payload = {
         action: "checkIn",
         userName: userName,
-        notes: "-",
+        notes: notes || "-",
         ip: userIp,
         device: getDeviceInfo()
       };
@@ -210,10 +280,11 @@
       }
     });
 
-    // 🔴 [2] 퇴근 버튼 클릭 이벤트 (3초 자동 닫힘 삭제 완료)
+    // 🔴 [2] 퇴근 버튼 클릭 이벤트
     document.getElementById("btnCheckOut").addEventListener("click", async function () {
       const userNameInput = document.getElementById("userName");
       const userName = userNameInput.value.trim();
+      const notes = document.getElementById("notes").value.trim();
       const btnOut = this;
 
       if (!userName) {
@@ -230,7 +301,7 @@
       const payload = {
         action: "checkOut",
         userName: userName,
-        notes: "-", // 클릭 퇴근은 메모 기본값 "-"
+        notes: notes || "-",
         ip: userIp,
         device: getDeviceInfo()
       };
@@ -248,10 +319,9 @@
           const todayStr = getTodayStr();
           localStorage.setItem(`attendance_${userName}_${todayStr}`, "completed");
 
-          // 17:20 이후인 경우 구글 시트 새 탭 자동 열기
+          // 17:20 이후인 경우 구글 시트 새 탭 열기
           openSheetIfAfter1720();
 
-          // ❌ 3초 후 window.close() 자동 닫힘 로직 완벽 제거됨
         } else {
           alert("퇴근 처리 중 오류가 발생했습니다.");
           btnOut.disabled = false;
@@ -263,7 +333,7 @@
     });
 
     // 🌙 [3] 17시 이후 창을 닫을 때 백그라운드 자동 퇴근 전송
-    window.addEventListener("beforeunload", function (e) {
+    window.addEventListener("beforeunload", function () {
       const userNameInput = document.getElementById("userName");
       const userName = (userNameInput ? userNameInput.value.trim() : "") || localStorage.getItem("lastUserName") || "";
       const todayStr = getTodayStr();
@@ -287,7 +357,61 @@
       }
     });
 
-    // 페이지 로드 시 기존 이름 자동 입력
+    // 📝 [4] 사외근무 신청 모달 제어
+    function openOutstationModal() {
+      const currentName = document.getElementById("userName").value.trim();
+      if (currentName) document.getElementById("reqName").value = currentName;
+      document.getElementById("outstationModal").style.display = "flex";
+    }
+
+    function closeOutstationModal() {
+      document.getElementById("outstationModal").style.display = "none";
+    }
+
+    async function submitOutstationRequest() {
+      const name = document.getElementById("reqName").value.trim();
+      const email = document.getElementById("reqEmail").value.trim();
+      const date = document.getElementById("reqDate").value;
+      const reason = document.getElementById("reqReason").value.trim();
+      const submitBtn = document.getElementById("btnSubmitOutstation");
+
+      if (!name || !date || !reason) {
+        alert("성함, 외근 예정 일자, 사유를 모두 입력해 주세요.");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = "신청 중...";
+
+      const payload = {
+        action: "outstationRequest",
+        userName: name,
+        userEmail: email,
+        leaveType: "사외근무(현장출퇴근/외근)",
+        startDate: date,
+        endDate: date,
+        notes: reason
+      };
+
+      try {
+        await fetch(GAS_WEBAPP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+
+        alert("📝 사외근무 사전 신청이 완료되었습니다.");
+        closeOutstationModal();
+        document.getElementById("reqReason").value = "";
+      } catch (err) {
+        alert("신청 중 오류가 발생했습니다.");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "신청 제출";
+      }
+    }
+
+    // 페이지 로드 시 기존 성함 자동 보존 입력
     window.addEventListener("DOMContentLoaded", () => {
       const savedName = localStorage.getItem("lastUserName");
       if (savedName) {
