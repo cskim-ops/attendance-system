@@ -126,7 +126,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 12.5px; /* 글자 크기 살짝 조정하여 1줄 유지 */
+      font-size: 12.5px;
       text-align: center;
       table-layout: auto;
     }
@@ -145,10 +145,10 @@
     }
     .nowrap { white-space: nowrap; }
 
-    /* 🎨 연차 구분 텍스트 스타일 (네이비 & 소프트 뱃지 스타일) */
+    /* 🎨 연차 구분 텍스트 스타일 */
     .leave-badge {
       display: inline-block;
-      color: #1e40af; /* 깔끔한 다크 네이비 블루 컬러 */
+      color: #1e40af;
       font-weight: bold;
       background-color: #eff6ff;
       padding: 2px 8px;
@@ -184,7 +184,7 @@
         display: none !important;
       }
       table {
-        font-size: 11px !important; /* 인쇄 시 1줄 세팅 */
+        font-size: 11px !important;
       }
       th, td {
         padding: 6px 4px !important;
@@ -228,7 +228,7 @@
     <button type="button" class="btn-print" onclick="window.print()">🖨️ PDF 저장 / 인쇄</button>
   </div>
 
-  <!-- 📊 내역 출력 테이블 (너비 비율 최적화) -->
+  <!-- 📊 내역 출력 테이블 -->
   <table>
     <thead>
       <tr>
@@ -251,7 +251,7 @@
 
 <script>
   // ⚠️ 본인의 실제 배포된 앱스 스크립트 웹앱 URL입니다.
-  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzW3NWqczmAZSPkLlkRcFYa2U-wjY6dkzpnUHZWSkCKHWmYMNEStaRD-RJF3yIEBCVd/exec";
+  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxSA-PHHCFJPwlm0FobT_gPk1_KRnR9_MyksBEN7EYkaXDcjTonxStVSgx_1TP0yrtb/exec";
 
   function formatDateStr(d) {
     const y = d.getFullYear();
@@ -326,6 +326,9 @@
       let html = "";
       filtered.forEach(row => {
         const leaveText = (row.leaveInfo && row.leaveInfo !== '-') ? `<span class="leave-badge">[${row.leaveInfo}]</span>` : '-';
+        
+        // 💡 IP 주소와 기기 정보 조합 처리
+        const ipDevInfo = row.ipDevice || ((row.ip && row.ip !== "-") ? `${row.ip} / ${row.device}` : (row.device || "-"));
 
         html += `
           <tr>
@@ -335,7 +338,7 @@
             <td class="nowrap" style="color: #dc2626; font-weight: bold;">${row.outTime || '-'}</td>
             <td class="nowrap">${leaveText}</td>
             <td>${row.note || '-'}</td>
-            <td style="font-size:11.5px; color:#64748b;">${row.device || '-'}</td>
+            <td style="font-size:11.5px; color:#64748b;">${ipDevInfo}</td> <!-- 👈 접속 IP / 기기 정보 출력 -->
           </tr>
         `;
       });
