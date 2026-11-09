@@ -80,8 +80,9 @@
     }
     button:active { transform: scale(0.98); }
     button:disabled {
-      opacity: 0.5;
+      opacity: 0.55;
       cursor: not-allowed;
+      background-color: #64748b !important;
     }
     .btn-in { background-color: #16a34a; }
     .btn-in:hover:not(:disabled) { background-color: #15803d; }
@@ -223,6 +224,28 @@
       return `${year}-${month}-${day}`;
     }
 
+    // 💡 당일 이미 출근했는지 검사하여 [출근하기] 버튼 상태 제어
+    function checkAttendanceState() {
+      const userName = document.getElementById("userName").value.trim();
+      const btnIn = document.getElementById("btnCheckIn");
+      const todayStr = getTodayStr();
+
+      if (!userName) {
+        btnIn.disabled = false;
+        btnIn.innerText = "출근하기";
+        return;
+      }
+
+      const status = localStorage.getItem(`attendance_${userName}_${todayStr}`);
+      if (status === "checkedIn" || status === "completed") {
+        btnIn.disabled = true;
+        btnIn.innerText = "☀️ 출근 완료됨";
+      } else {
+        btnIn.disabled = false;
+        btnIn.innerText = "출근하기";
+      }
+    }
+
     // 💡 17시 20분 이후 판단 시 구글 시트 새 탭 열기
     function openSheetIfAfter1720() {
       const now = new Date();
@@ -270,12 +293,18 @@
 
         if (response.ok) {
           alert(`${userName} 님, 출근 처리가 완료되었습니다.`);
+          
+          // 오늘 출근 상태 로컬 저장 및 버튼 비활성화 전환
+          const todayStr = getTodayStr();
+          localStorage.setItem(`attendance_${userName}_${todayStr}`, "checkedIn");
+          checkAttendanceState();
+
         } else {
           alert("출근 처리 중 오류가 발생했습니다.");
+          btnIn.disabled = false;
         }
       } catch (err) {
         alert("통신 오류가 발생했습니다: " + err.message);
-      } finally {
         btnIn.disabled = false;
       }
     });
@@ -318,22 +347,23 @@
           
           const todayStr = getTodayStr();
           localStorage.setItem(`attendance_${userName}_${todayStr}`, "completed");
+          checkAttendanceState();
 
           // 17:20 이후인 경우 구글 시트 새 탭 열기
           openSheetIfAfter1720();
 
         } else {
           alert("퇴근 처리 중 오류가 발생했습니다.");
-          btnOut.disabled = false;
         }
       } catch (err) {
         alert("통신 오류가 발생했습니다: " + err.message);
+      } finally {
         btnOut.disabled = false;
       }
     });
 
-    // 🌙 [3] 17시 이후 창을 닫을 때 백그라운드 자동 퇴근 전송
-    window.addEventListener("beforeunload", function () {
+    // 🌙 [3] 17시 이후 PC/창 닫힘 자동 퇴근 감지 (Windows/Mac 및 OS별 종료 처리 3중 보완)
+    function triggerAutoCheckOut() {
       const userNameInput = document.getElementById("userName");
       const userName = (userNameInput ? userNameInput.value.trim() : "") || localStorage.getItem("lastUserName") || "";
       const todayStr = getTodayStr();
@@ -347,13 +377,33 @@
         const payload = JSON.stringify({
           action: "autoCheckOut",
           userName: userName,
-          notes: "자동감지(창닫힘)",
+          notes: "PC 자동 종료 퇴근",
           ip: userIp,
           device: getDeviceInfo()
         });
 
-        navigator.sendBeacon(GAS_WEBAPP_URL, payload);
+        if (navigator.sendBeacon) {
+          const blob = new Blob([payload], { type: 'text/plain;charset=utf-8' });
+          navigator.sendBeacon(GAS_WEBAPP_URL, blob);
+        } else {
+          fetch(GAS_WEBAPP_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: payload,
+            keepalive: true
+          }).catch(() => {});
+        }
+
         localStorage.setItem(`attendance_${userName}_${todayStr}`, "completed");
+      }
+    }
+
+    // Windows Chrome/Edge 등 OS별 종료 이벤트 3중 바인딩
+    window.addEventListener("beforeunload", triggerAutoCheckOut);
+    window.addEventListener("pagehide", triggerAutoCheckOut);
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "hidden") {
+        triggerAutoCheckOut();
       }
     });
 
@@ -411,12 +461,16 @@
       }
     }
 
-    // 페이지 로드 시 기존 성함 자동 보존 입력
+    // 이름 입력란 수정 시 상태 다시 검사
+    document.getElementById("userName").addEventListener("input", checkAttendanceState);
+
+    // 페이지 로드 시 이름 자동 입력 및 출근 상태 체크
     window.addEventListener("DOMContentLoaded", () => {
       const savedName = localStorage.getItem("lastUserName");
       if (savedName) {
         document.getElementById("userName").value = savedName;
       }
+      checkAttendanceState();
     });
   </script>
 </body>
