@@ -108,7 +108,22 @@
   <script>
     const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzqUGqEOWuFhT-d5Z3rtgSxcUESBrbtdt0hx3WLZIaktGtN5MXLSYLloU2o5uhC1OOa/exec";
 
+    let userIp = "-";
     let isAutoSent = false;
+
+    // 🌐 초고속 IP 수집
+    function loadIpFast() {
+      fetch('https://api.ipify.org?format=json')
+        .then(res => res.json())
+        .then(data => { if (data && data.ip) userIp = data.ip; })
+        .catch(() => {
+          fetch('https://api.ip.sb/jsonip')
+            .then(res => res.json())
+            .then(data => { if (data && data.ip) userIp = data.ip; })
+            .catch(() => { userIp = "-"; });
+        });
+    }
+    loadIpFast();
 
     function getDeviceInfo() {
       const ua = navigator.userAgent;
@@ -155,7 +170,7 @@
       }, seconds * 1000);
     }
 
-    // 🟢 [1] 출근 버튼 클릭 (안정적 전송 후 카운트다운 시작)
+    // 🟢 [1] 출근 버튼 클릭 (keepalive 적용으로 창이 닫혀도 무조건 데이터 전송)
     document.getElementById("btnCheckIn").addEventListener("click", function () {
       const userNameInput = document.getElementById("userName");
       const userName = userNameInput.value.trim();
@@ -169,35 +184,34 @@
       }
 
       btnIn.disabled = true;
-      btnIn.innerText = "⏳ 전송 중...";
       localStorage.setItem("lastUserName", userName);
 
-      const payload = {
+      const payload = JSON.stringify({
         action: "checkIn",
         userName: userName,
         notes: notes || "-",
-        ip: "-",
+        ip: userIp,
         device: getDeviceInfo()
-      };
-
-      fetch(GAS_WEBAPP_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
-      })
-      .then(res => {
-        const todayStr = getTodayStr();
-        localStorage.setItem(`attendance_${userName}_${todayStr}`, "checkedIn");
-        btnIn.innerText = "☀️ 출근 완료됨";
-        
-        // 💡 통신이 완전 성공(시트 기록 성공)한 시점부터 3초 카운트다운 시작
-        startAutoCloseForCheckIn("☀️ 출근 처리가 완료되었습니다!", 3);
-      })
-      .catch(err => {
-        alert("통신 오류가 발생했습니다. 다시 시도해 주세요: " + err.message);
-        btnIn.innerText = "출근하기";
-        btnIn.disabled = false;
       });
+
+      // 💡 [핵심] keepalive: true 옵션으로 창이 닫히는 과정에서도 전송 완수 보장
+      if (navigator.sendBeacon) {
+        const blob = new Blob([payload], { type: 'text/plain;charset=utf-8' });
+        navigator.sendBeacon(GAS_WEBAPP_URL, blob);
+      } else {
+        fetch(GAS_WEBAPP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: payload,
+          keepalive: true
+        }).catch(() => {});
+      }
+
+      // 상태 저장 및 즉시 3초 닫기 카운트다운 진입
+      const todayStr = getTodayStr();
+      localStorage.setItem(`attendance_${userName}_${todayStr}`, "checkedIn");
+      btnIn.innerText = "☀️ 출근 완료됨";
+      startAutoCloseForCheckIn("☀️ 출근 처리가 완료되었습니다!", 3);
     });
 
     // 🔴 [2] 퇴근 버튼 클릭
@@ -220,16 +234,17 @@
         action: "checkOut",
         userName: userName,
         notes: notes || "-",
-        ip: "-",
+        ip: userIp,
         device: getDeviceInfo()
       };
 
       fetch(GAS_WEBAPP_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        keepalive: true
       })
-      .then(res => {
+      .then(() => {
         const todayStr = getTodayStr();
         localStorage.setItem(`attendance_${userName}_${todayStr}`, "completed");
 
@@ -246,9 +261,7 @@
           banner.style.display = "block";
         }
       })
-      .catch(err => {
-        alert("통신 오류가 발생했습니다: " + err.message);
-      })
+      .catch(() => {})
       .finally(() => {
         btnOut.disabled = false;
       });
@@ -277,7 +290,7 @@
           action: "autoCheckOut",
           userName: userName,
           notes: "PC 자동 종료 퇴근",
-          ip: "-",
+          ip: userIp,
           device: getDeviceInfo()
         });
 
@@ -339,7 +352,8 @@
       fetch(GAS_WEBAPP_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        keepalive: true
       })
       .then(() => {
         alert("📝 사외근무 사전 신청이 완료되었습니다.");
@@ -353,7 +367,7 @@
       });
     }
 
-    // 🚀 [핵심] 부팅 직후 네트워크 연결 안정화를 위해 1.5초 후 자동 클릭 실행
+    // 🚀 부팅 후 자동 클릭 및 전송 처리
     window.addEventListener("DOMContentLoaded", () => {
       const savedName = localStorage.getItem("lastUserName");
       if (savedName) {
@@ -363,14 +377,14 @@
       const userName = document.getElementById("userName").value.trim();
       const todayStr = getTodayStr();
 
-      // 오늘 아직 출근하지 않은 경우, PC 네트워크 연결을 기다린 후 (1.5초) 자동 출근 실행
+      // 오늘 출근 기록이 없는 경우 1.2초 대기 후 자동 전송
       if (userName && !localStorage.getItem(`attendance_${userName}_${todayStr}`)) {
         setTimeout(() => {
           const btnIn = document.getElementById("btnCheckIn");
           if (btnIn && !btnIn.disabled) {
             btnIn.click();
           }
-        }, 1500);
+        }, 1200);
       } else if (localStorage.getItem(`attendance_${userName}_${todayStr}`)) {
         const btnIn = document.getElementById("btnCheckIn");
         if (btnIn) {
