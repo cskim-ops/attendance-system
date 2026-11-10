@@ -169,7 +169,7 @@
       }, seconds * 1000);
     }
 
-    // 🟢 [1] 출근 버튼 클릭 (no-cors 적용으로 전송 성공 보장)
+    // 🟢 [1] 출근 버튼 클릭 (no-cors + keepalive로 전송 안정화)
     document.getElementById("btnCheckIn").addEventListener("click", function () {
       const userNameInput = document.getElementById("userName");
       const userName = userNameInput.value.trim();
@@ -193,7 +193,6 @@
         device: getDeviceInfo()
       });
 
-      // 💡 mode: 'no-cors' 및 keepalive를 지정하여 CORS 차단 없이 GAS 전송 완수
       fetch(GAS_WEBAPP_URL, {
         method: "POST",
         mode: "no-cors",
@@ -206,7 +205,7 @@
       localStorage.setItem(`attendance_${userName}_${todayStr}`, "checkedIn");
       btnIn.innerText = "☀️ 출근 완료됨";
 
-      // 데이터 전송 요청 직후 3초 카운트다운 배너 작동
+      // 전송 요청 후 3초 카운트다운 진입
       startAutoCloseForCheckIn("☀️ 출근 처리가 완료되었습니다!", 3);
     });
 
@@ -358,7 +357,7 @@
       submitBtn.innerText = "신청 제출";
     }
 
-    // 🚀 부팅 후 1.5초 뒤 자동 클릭 실행
+    // 🚀 부팅 후 네트워크 지연을 극복하기 위해 1.5초 후 자동 클릭 실행
     window.addEventListener("DOMContentLoaded", () => {
       const savedName = localStorage.getItem("lastUserName");
       if (savedName) {
