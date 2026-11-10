@@ -111,7 +111,7 @@
     let userIp = "-";
     let isAutoSent = false;
 
-    // 🌐 초고속 IP 수집
+    // 🌐 IP 수집
     function loadIpFast() {
       fetch('https://api.ipify.org?format=json')
         .then(res => res.json())
@@ -170,7 +170,7 @@
       }, seconds * 1000);
     }
 
-    // 🟢 [1] 출근 버튼 클릭 (keepalive 적용으로 창이 닫혀도 무조건 데이터 전송)
+    // 🟢 [1] 출근 버튼 클릭 (구글 시트 저장 완수 후에만 3초 닫기 구동)
     document.getElementById("btnCheckIn").addEventListener("click", function () {
       const userNameInput = document.getElementById("userName");
       const userName = userNameInput.value.trim();
@@ -184,6 +184,7 @@
       }
 
       btnIn.disabled = true;
+      btnIn.innerText = "⏳ 전송 중...";
       localStorage.setItem("lastUserName", userName);
 
       const payload = JSON.stringify({
@@ -194,24 +195,27 @@
         device: getDeviceInfo()
       });
 
-      // 💡 [핵심] keepalive: true 옵션으로 창이 닫히는 과정에서도 전송 완수 보장
-      if (navigator.sendBeacon) {
-        const blob = new Blob([payload], { type: 'text/plain;charset=utf-8' });
-        navigator.sendBeacon(GAS_WEBAPP_URL, blob);
-      } else {
-        fetch(GAS_WEBAPP_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: payload,
-          keepalive: true
-        }).catch(() => {});
-      }
-
-      // 상태 저장 및 즉시 3초 닫기 카운트다운 진입
-      const todayStr = getTodayStr();
-      localStorage.setItem(`attendance_${userName}_${todayStr}`, "checkedIn");
-      btnIn.innerText = "☀️ 출근 완료됨";
-      startAutoCloseForCheckIn("☀️ 출근 처리가 완료되었습니다!", 3);
+      // 💡 시트 저장 응답을 확실하게 수신한 후 카운트다운 실행
+      fetch(GAS_WEBAPP_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: payload,
+        keepalive: true
+      })
+      .then(res => {
+        const todayStr = getTodayStr();
+        localStorage.setItem(`attendance_${userName}_${todayStr}`, "checkedIn");
+        btnIn.innerText = "☀️ 출근 완료됨";
+        
+        // 데이터 저장에 성공했으므로 이제 3초 후 창 닫기 실행
+        startAutoCloseForCheckIn("☀️ 출근 처리가 완료되었습니다!", 3);
+      })
+      .catch(err => {
+        // 통신 에러 발생 시 재시도 가능하도록 복원
+        btnIn.innerText = "출근하기";
+        btnIn.disabled = false;
+        alert("출근 전송 중 오류가 발생했습니다. 다시 클릭해 주세요.");
+      });
     });
 
     // 🔴 [2] 퇴근 버튼 클릭
@@ -367,7 +371,7 @@
       });
     }
 
-    // 🚀 부팅 후 자동 클릭 및 전송 처리
+    // 🚀 부팅 후 네트워크 준비 시간을 고려해 1.8초 뒤 자동 클릭 실행
     window.addEventListener("DOMContentLoaded", () => {
       const savedName = localStorage.getItem("lastUserName");
       if (savedName) {
@@ -377,14 +381,14 @@
       const userName = document.getElementById("userName").value.trim();
       const todayStr = getTodayStr();
 
-      // 오늘 출근 기록이 없는 경우 1.2초 대기 후 자동 전송
+      // 오늘 출근 기록이 없는 경우 1.8초 대기 후 자동 전송
       if (userName && !localStorage.getItem(`attendance_${userName}_${todayStr}`)) {
         setTimeout(() => {
           const btnIn = document.getElementById("btnCheckIn");
           if (btnIn && !btnIn.disabled) {
             btnIn.click();
           }
-        }, 1200);
+        }, 1800);
       } else if (localStorage.getItem(`attendance_${userName}_${todayStr}`)) {
         const btnIn = document.getElementById("btnCheckIn");
         if (btnIn) {
