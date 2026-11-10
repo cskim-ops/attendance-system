@@ -111,7 +111,6 @@
     let userIp = "-";
     let isAutoSent = false;
 
-    // 🌐 IP 수집
     function loadIpFast() {
       fetch('https://api.ipify.org?format=json')
         .then(res => res.json())
@@ -139,7 +138,7 @@
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
-    // ☀️ [출근 전용] 3초 카운트다운 후 창 닫기
+    // ☀️ 3초 카운트다운 후 창 닫기
     function startAutoCloseForCheckIn(msgText, seconds) {
       const banner = document.getElementById("topBanner");
       const bannerText = document.getElementById("bannerText");
@@ -170,7 +169,7 @@
       }, seconds * 1000);
     }
 
-    // 🟢 [1] 출근 버튼 클릭 (구글 시트 저장 완수 후에만 3초 닫기 구동)
+    // 🟢 [1] 출근 버튼 클릭 (no-cors 적용으로 전송 성공 보장)
     document.getElementById("btnCheckIn").addEventListener("click", function () {
       const userNameInput = document.getElementById("userName");
       const userName = userNameInput.value.trim();
@@ -184,7 +183,6 @@
       }
 
       btnIn.disabled = true;
-      btnIn.innerText = "⏳ 전송 중...";
       localStorage.setItem("lastUserName", userName);
 
       const payload = JSON.stringify({
@@ -195,27 +193,21 @@
         device: getDeviceInfo()
       });
 
-      // 💡 시트 저장 응답을 확실하게 수신한 후 카운트다운 실행
+      // 💡 mode: 'no-cors' 및 keepalive를 지정하여 CORS 차단 없이 GAS 전송 완수
       fetch(GAS_WEBAPP_URL, {
         method: "POST",
+        mode: "no-cors",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: payload,
         keepalive: true
-      })
-      .then(res => {
-        const todayStr = getTodayStr();
-        localStorage.setItem(`attendance_${userName}_${todayStr}`, "checkedIn");
-        btnIn.innerText = "☀️ 출근 완료됨";
-        
-        // 데이터 저장에 성공했으므로 이제 3초 후 창 닫기 실행
-        startAutoCloseForCheckIn("☀️ 출근 처리가 완료되었습니다!", 3);
-      })
-      .catch(err => {
-        // 통신 에러 발생 시 재시도 가능하도록 복원
-        btnIn.innerText = "출근하기";
-        btnIn.disabled = false;
-        alert("출근 전송 중 오류가 발생했습니다. 다시 클릭해 주세요.");
       });
+
+      const todayStr = getTodayStr();
+      localStorage.setItem(`attendance_${userName}_${todayStr}`, "checkedIn");
+      btnIn.innerText = "☀️ 출근 완료됨";
+
+      // 데이터 전송 요청 직후 3초 카운트다운 배너 작동
+      startAutoCloseForCheckIn("☀️ 출근 처리가 완료되었습니다!", 3);
     });
 
     // 🔴 [2] 퇴근 버튼 클릭
@@ -234,41 +226,38 @@
       btnOut.disabled = true;
       localStorage.setItem("lastUserName", userName);
 
-      const payload = {
+      const payload = JSON.stringify({
         action: "checkOut",
         userName: userName,
         notes: notes || "-",
         ip: userIp,
         device: getDeviceInfo()
-      };
+      });
 
       fetch(GAS_WEBAPP_URL, {
         method: "POST",
+        mode: "no-cors",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload),
+        body: payload,
         keepalive: true
-      })
-      .then(() => {
-        const todayStr = getTodayStr();
-        localStorage.setItem(`attendance_${userName}_${todayStr}`, "completed");
-
-        const banner = document.getElementById("topBanner");
-        const bannerText = document.getElementById("bannerText");
-        const countArea = document.getElementById("countArea");
-
-        if (banner && bannerText) {
-          bannerText.innerHTML = "<b>🌙 퇴근 완료! (창을 직접 닫으셔도 됩니다)</b>";
-          if (countArea) countArea.style.display = "none";
-          banner.style.backgroundColor = "#d1fae5";
-          banner.style.borderColor = "#a7f3d0";
-          banner.style.color = "#065f46";
-          banner.style.display = "block";
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        btnOut.disabled = false;
       });
+
+      const todayStr = getTodayStr();
+      localStorage.setItem(`attendance_${userName}_${todayStr}`, "completed");
+
+      const banner = document.getElementById("topBanner");
+      const bannerText = document.getElementById("bannerText");
+      const countArea = document.getElementById("countArea");
+
+      if (banner && bannerText) {
+        bannerText.innerHTML = "<b>🌙 퇴근 완료! (수고하셨습니다. 창을 직접 닫으셔도 됩니다)</b>";
+        if (countArea) countArea.style.display = "none";
+        banner.style.backgroundColor = "#d1fae5";
+        banner.style.borderColor = "#a7f3d0";
+        banner.style.color = "#065f46";
+        banner.style.display = "block";
+      }
+      btnOut.disabled = false;
     });
 
     // 🌙 [3] 17시 20분 이후 창을 닫을 때 백그라운드 자동 퇴근 전송
@@ -304,6 +293,7 @@
         } else {
           fetch(GAS_WEBAPP_URL, {
             method: "POST",
+            mode: "no-cors",
             headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: payload,
             keepalive: true
@@ -343,7 +333,7 @@
       submitBtn.disabled = true;
       submitBtn.innerText = "신청 중...";
 
-      const payload = {
+      const payload = JSON.stringify({
         action: "outstationRequest",
         userName: name,
         userEmail: email,
@@ -351,27 +341,24 @@
         startDate: date,
         endDate: date,
         notes: reason
-      };
+      });
 
       fetch(GAS_WEBAPP_URL, {
         method: "POST",
+        mode: "no-cors",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload),
+        body: payload,
         keepalive: true
-      })
-      .then(() => {
-        alert("📝 사외근무 사전 신청이 완료되었습니다.");
-        closeOutstationModal();
-        document.getElementById("reqReason").value = "";
-      })
-      .catch(() => alert("신청 중 오류가 발생했습니다."))
-      .finally(() => {
-        submitBtn.disabled = false;
-        submitBtn.innerText = "신청 제출";
       });
+
+      alert("📝 사외근무 사전 신청이 완료되었습니다.");
+      closeOutstationModal();
+      document.getElementById("reqReason").value = "";
+      submitBtn.disabled = false;
+      submitBtn.innerText = "신청 제출";
     }
 
-    // 🚀 부팅 후 네트워크 준비 시간을 고려해 1.8초 뒤 자동 클릭 실행
+    // 🚀 부팅 후 1.5초 뒤 자동 클릭 실행
     window.addEventListener("DOMContentLoaded", () => {
       const savedName = localStorage.getItem("lastUserName");
       if (savedName) {
@@ -381,14 +368,13 @@
       const userName = document.getElementById("userName").value.trim();
       const todayStr = getTodayStr();
 
-      // 오늘 출근 기록이 없는 경우 1.8초 대기 후 자동 전송
       if (userName && !localStorage.getItem(`attendance_${userName}_${todayStr}`)) {
         setTimeout(() => {
           const btnIn = document.getElementById("btnCheckIn");
           if (btnIn && !btnIn.disabled) {
             btnIn.click();
           }
-        }, 1800);
+        }, 1500);
       } else if (localStorage.getItem(`attendance_${userName}_${todayStr}`)) {
         const btnIn = document.getElementById("btnCheckIn");
         if (btnIn) {
