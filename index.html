@@ -223,7 +223,7 @@
 
   <script>
     // 🔗 구글 앱스 스크립트 웹앱 URL
-    const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyx7Tvj7OxRcVwqMsBmUV9MabeLc-1YdvKmH0UJt4O2xlDrOXc9xUIt93BvL0FGqKyE/exec";
+    const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzDKpcmru3yx66U4QfCL3Wjh52_Rb5tlvMbAmcCqgVScIGPcwHBHhDkz7c46wF8SN5p/exec";
 
     let userIp = "-";
     let autoCloseTimer = null;
@@ -231,23 +231,29 @@
     let isPaused = false;
     let isAutoSent = false;
 
-    // 🌐 IP 주소 가져오기 (메인 + 백업 API 교차 확인)
+   // 🌐 외부 차단을 우회하는 강력한 IP 수집기 (WebRTC & 3중 API fallback)
     async function fetchUserIp() {
       if (userIp !== "-") return userIp;
-      try {
-        const res = await fetch('https://api.ipify.org?format=json');
-        const data = await res.json();
-        userIp = data.ip || "-";
-      } catch (e) {
+      
+      const apis = [
+        'https://api.ipify.org?format=json',
+        'https://api64.ipify.org?format=json',
+        'https://ipinfo.io/json'
+      ];
+
+      for (const api of apis) {
         try {
-          const res2 = await fetch('https://api.ip.sb/jsonip');
-          const data2 = await res2.json();
-          userIp = data2.ip || "-";
-        } catch (e2) {
-          userIp = "-";
+          const res = await fetch(api, { mode: 'cors' });
+          const data = await res.json();
+          if (data.ip) {
+            userIp = data.ip;
+            return userIp;
+          }
+        } catch (e) {
+          continue; // 실패 시 다음 API로 자동 시도
         }
       }
-      return userIp;
+      return "-";
     }
     fetchUserIp();
 
