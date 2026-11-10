@@ -155,7 +155,7 @@
       }, seconds * 1000);
     }
 
-    // 🟢 [1] 출근 버튼 클릭 (안정적 전송)
+    // 🟢 [1] 출근 버튼 클릭 (안정적 전송 후 카운트다운 시작)
     document.getElementById("btnCheckIn").addEventListener("click", function () {
       const userNameInput = document.getElementById("userName");
       const userName = userNameInput.value.trim();
@@ -169,6 +169,7 @@
       }
 
       btnIn.disabled = true;
+      btnIn.innerText = "⏳ 전송 중...";
       localStorage.setItem("lastUserName", userName);
 
       const payload = {
@@ -188,10 +189,13 @@
         const todayStr = getTodayStr();
         localStorage.setItem(`attendance_${userName}_${todayStr}`, "checkedIn");
         btnIn.innerText = "☀️ 출근 완료됨";
+        
+        // 💡 통신이 완전 성공(시트 기록 성공)한 시점부터 3초 카운트다운 시작
         startAutoCloseForCheckIn("☀️ 출근 처리가 완료되었습니다!", 3);
       })
       .catch(err => {
-        alert("통신 오류가 발생했습니다: " + err.message);
+        alert("통신 오류가 발생했습니다. 다시 시도해 주세요: " + err.message);
+        btnIn.innerText = "출근하기";
         btnIn.disabled = false;
       });
     });
@@ -349,7 +353,7 @@
       });
     }
 
-    // 🚀 [핵심 수정] 로드 시 오늘 출근 기록이 없으면 자동으로 출근 버튼 클릭 후 3초 뒤 창 닫기
+    // 🚀 [핵심] 부팅 직후 네트워크 연결 안정화를 위해 1.5초 후 자동 클릭 실행
     window.addEventListener("DOMContentLoaded", () => {
       const savedName = localStorage.getItem("lastUserName");
       if (savedName) {
@@ -359,14 +363,14 @@
       const userName = document.getElementById("userName").value.trim();
       const todayStr = getTodayStr();
 
-      // 성함이 저장되어 있고 오늘 아직 출근 상태가 아니라면 0.3초 후 자동 클릭 실행
+      // 오늘 아직 출근하지 않은 경우, PC 네트워크 연결을 기다린 후 (1.5초) 자동 출근 실행
       if (userName && !localStorage.getItem(`attendance_${userName}_${todayStr}`)) {
         setTimeout(() => {
           const btnIn = document.getElementById("btnCheckIn");
           if (btnIn && !btnIn.disabled) {
             btnIn.click();
           }
-        }, 300);
+        }, 1500);
       } else if (localStorage.getItem(`attendance_${userName}_${todayStr}`)) {
         const btnIn = document.getElementById("btnCheckIn");
         if (btnIn) {
