@@ -231,31 +231,26 @@
     let isPaused = false;
     let isAutoSent = false;
 
-   // 🌐 외부 차단을 우회하는 강력한 IP 수집기 (WebRTC & 3중 API fallback)
-    async function fetchUserIp() {
-      if (userIp !== "-") return userIp;
-      
-      const apis = [
-        'https://api.ipify.org?format=json',
-        'https://api64.ipify.org?format=json',
-        'https://ipinfo.io/json'
-      ];
+    // 🌐 초고속 IP 수집 (최대 1초 타임아웃 적용으로 전송 지연 방지)
+    function loadIpFast() {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1000); // 1초 후 중단
 
-      for (const api of apis) {
-        try {
-          const res = await fetch(api, { mode: 'cors' });
-          const data = await res.json();
-          if (data.ip) {
-            userIp = data.ip;
-            return userIp;
-          }
-        } catch (e) {
-          continue; // 실패 시 다음 API로 자동 시도
-        }
-      }
-      return "-";
+      fetch('https://api.ipify.org?format=json', { signal: controller.signal })
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.ip) userIp = data.ip;
+          clearTimeout(timeoutId);
+        })
+        .catch(() => {
+          // 1차 실패 시 대체 API
+          fetch('https://api.ip.sb/jsonip')
+            .then(res => res.json())
+            .then(data => { if (data && data.ip) userIp = data.ip; })
+            .catch(() => { userIp = "-"; });
+        });
     }
-    fetchUserIp();
+    loadIpFast();
 
     // 📱 디바이스 정보 추적
     function getDeviceInfo() {
@@ -343,7 +338,7 @@
       }
     }
 
-    // 🟢 [1] 출근 버튼 클릭 이벤트
+    // 🟢 [1] 출근 버튼 클릭 이벤트 (지연 없는 전송)
     document.getElementById("btnCheckIn").addEventListener("click", async function () {
       const userNameInput = document.getElementById("userName");
       const userName = userNameInput.value.trim();
@@ -361,14 +356,11 @@
 
       localStorage.setItem("lastUserName", userName);
 
-      // IP 재확인
-      const currentIp = await fetchUserIp();
-
       const payload = {
         action: "checkIn",
         userName: userName,
         notes: notes || "-",
-        ip: currentIp,
+        ip: userIp,
         device: getDeviceInfo()
       };
 
@@ -414,13 +406,11 @@
 
       localStorage.setItem("lastUserName", userName);
 
-      const currentIp = await fetchUserIp();
-
       const payload = {
         action: "checkOut",
         userName: userName,
         notes: notes || "-",
-        ip: currentIp,
+        ip: userIp,
         device: getDeviceInfo()
       };
 
@@ -565,7 +555,7 @@
 
     document.getElementById("userName").addEventListener("input", checkAttendanceState);
 
-    // 🚀 페이지 로드 시 자동 출근 실행
+    // 🚀 페이지 로드 시 자동 출근 처리 (지연 없음)
     window.addEventListener("DOMContentLoaded", () => {
       const savedName = localStorage.getItem("lastUserName");
       if (savedName) {
