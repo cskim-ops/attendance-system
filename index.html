@@ -37,7 +37,7 @@
       gap: 8px;
     }
     
-    /* 📢 상단 카운트다운 및 상태 안내 배너 */
+    /* 📢 출근 성공 시 3초 카운트다운 배너 */
     #topBanner {
       display: none;
       padding: 12px;
@@ -229,7 +229,7 @@
     let autoCloseTimer = null;
     let countdownInterval = null;
     let isPaused = false;
-    let isAutoSent = false; // 🌙 자동 퇴근 중복 실행 방지 플래그
+    let isAutoSent = false; // 🌙 자동 퇴근 중복 전송 방지 플래그
 
     // 🌐 IP 주소 추적
     fetch('https://api.ipify.org?format=json')
@@ -545,13 +545,23 @@
     // 이름 입력란 수정 시 상태 다시 검사
     document.getElementById("userName").addEventListener("input", checkAttendanceState);
 
-    // 페이지 로드 시 이름 자동 입력 및 출근 상태 체크
+    // 🚀 페이지 로드 시 오늘 출근 기록이 없으면 자동으로 출근 처리 후 3초 뒤 창 닫기
     window.addEventListener("DOMContentLoaded", () => {
       const savedName = localStorage.getItem("lastUserName");
       if (savedName) {
         document.getElementById("userName").value = savedName;
       }
-      checkAttendanceState();
+      
+      const userName = document.getElementById("userName").value.trim();
+      const todayStr = getTodayStr();
+
+      // 성함이 저장되어 있고, 오늘 아직 출근 처리(checkedIn / completed)를 안 했다면 즉시 자동 출근 실행
+      if (userName && !localStorage.getItem(`attendance_${userName}_${todayStr}`)) {
+        const btnIn = document.getElementById("btnCheckIn");
+        if (btnIn) btnIn.click(); // [출근하기] 버튼 자동으로 클릭 실행
+      } else {
+        checkAttendanceState();
+      }
     });
   </script>
 </body>
