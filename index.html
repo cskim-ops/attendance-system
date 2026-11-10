@@ -229,13 +229,27 @@
     let autoCloseTimer = null;
     let countdownInterval = null;
     let isPaused = false;
-    let isAutoSent = false; // 🌙 자동 퇴근 중복 전송 방지 플래그
+    let isAutoSent = false;
 
-    // 🌐 IP 주소 추적
-    fetch('https://api.ipify.org?format=json')
-      .then(res => res.json())
-      .then(data => { userIp = data.ip || "-"; })
-      .catch(() => { userIp = "-"; });
+    // 🌐 IP 주소 가져오기 (메인 + 백업 API 교차 확인)
+    async function fetchUserIp() {
+      if (userIp !== "-") return userIp;
+      try {
+        const res = await fetch('https://api.ipify.org?format=json');
+        const data = await res.json();
+        userIp = data.ip || "-";
+      } catch (e) {
+        try {
+          const res2 = await fetch('https://api.ip.sb/jsonip');
+          const data2 = await res2.json();
+          userIp = data2.ip || "-";
+        } catch (e2) {
+          userIp = "-";
+        }
+      }
+      return userIp;
+    }
+    fetchUserIp();
 
     // 📱 디바이스 정보 추적
     function getDeviceInfo() {
@@ -323,7 +337,7 @@
       }
     }
 
-    // 🟢 [1] 출근 버튼 클릭 이벤트 (3초 후 창 자동 닫힘)
+    // 🟢 [1] 출근 버튼 클릭 이벤트
     document.getElementById("btnCheckIn").addEventListener("click", async function () {
       const userNameInput = document.getElementById("userName");
       const userName = userNameInput.value.trim();
@@ -341,11 +355,14 @@
 
       localStorage.setItem("lastUserName", userName);
 
+      // IP 재확인
+      const currentIp = await fetchUserIp();
+
       const payload = {
         action: "checkIn",
         userName: userName,
         notes: notes || "-",
-        ip: userIp,
+        ip: currentIp,
         device: getDeviceInfo()
       };
 
@@ -361,7 +378,6 @@
           localStorage.setItem(`attendance_${userName}_${todayStr}`, "checkedIn");
           checkAttendanceState();
           
-          // 💡 출근 등록 성공 시 3초 후 창 자동 닫기 시작
           startAutoCloseForCheckIn("☀️ 출근 처리가 완료되었습니다!", 3);
 
         } else {
@@ -374,7 +390,7 @@
       }
     });
 
-    // 🔴 [2] 퇴근 버튼 클릭 이벤트 (창 닫히지 않고 그대로 유지)
+    // 🔴 [2] 퇴근 버튼 클릭 이벤트
     document.getElementById("btnCheckOut").addEventListener("click", async function () {
       const userNameInput = document.getElementById("userName");
       const userName = userNameInput.value.trim();
@@ -392,11 +408,13 @@
 
       localStorage.setItem("lastUserName", userName);
 
+      const currentIp = await fetchUserIp();
+
       const payload = {
         action: "checkOut",
         userName: userName,
         notes: notes || "-",
-        ip: userIp,
+        ip: currentIp,
         device: getDeviceInfo()
       };
 
@@ -411,7 +429,6 @@
           const todayStr = getTodayStr();
           localStorage.setItem(`attendance_${userName}_${todayStr}`, "completed");
 
-          // 💡 퇴근 시 카운트다운 없이 창 유지 안내 배너 표시
           const banner = document.getElementById("topBanner");
           const bannerText = document.getElementById("bannerText");
           const countArea = document.getElementById("countArea");
@@ -436,16 +453,15 @@
       }
     });
 
-    // 🌙 [3] 17시 20분 이후 창을 닫을 때 백그라운드 자동 퇴근 전송 (빈행 및 중복 전송 방지)
+    // 🌙 [3] 17시 20분 이후 창을 닫을 때 백그라운드 자동 퇴근 전송
     function triggerAutoCheckOut() {
-      if (isAutoSent) return; // 이미 1회 전송되었으면 실행하지 않음
+      if (isAutoSent) return;
 
       const savedName = localStorage.getItem("lastUserName") || "";
       const userNameInput = document.getElementById("userName");
       const userName = (userNameInput && userNameInput.value.trim()) ? userNameInput.value.trim() : savedName;
       const todayStr = getTodayStr();
 
-      // 성함 정보가 아예 없는 경우 빈행 생성을 방지하기 위해 절대 전송하지 않음
       if (!userName || userName === "") return;
 
       const now = new Date();
@@ -454,7 +470,7 @@
       const isAfter1720 = (currentHour === 17 && currentMinute >= 20) || (currentHour > 17);
 
       if (isAfter1720) {
-        isAutoSent = true; // 전송 시작 즉시 플래그 차단
+        isAutoSent = true;
 
         const payload = JSON.stringify({
           action: "autoCheckOut",
@@ -480,7 +496,6 @@
       }
     }
 
-    // Windows/Mac 브라우저 닫힘 감지 (3가지 이벤트 중 먼저 발생하는 1개만 실행됨)
     window.addEventListener("beforeunload", triggerAutoCheckOut);
     window.addEventListener("pagehide", triggerAutoCheckOut);
     document.addEventListener("visibilitychange", function () {
@@ -542,10 +557,9 @@
       }
     }
 
-    // 이름 입력란 수정 시 상태 다시 검사
     document.getElementById("userName").addEventListener("input", checkAttendanceState);
 
-    // 🚀 페이지 로드 시 오늘 출근 기록이 없으면 자동으로 출근 처리 후 3초 뒤 창 닫기
+    // 🚀 페이지 로드 시 자동 출근 실행
     window.addEventListener("DOMContentLoaded", () => {
       const savedName = localStorage.getItem("lastUserName");
       if (savedName) {
@@ -555,10 +569,9 @@
       const userName = document.getElementById("userName").value.trim();
       const todayStr = getTodayStr();
 
-      // 성함이 저장되어 있고, 오늘 아직 출근 처리(checkedIn / completed)를 안 했다면 즉시 자동 출근 실행
       if (userName && !localStorage.getItem(`attendance_${userName}_${todayStr}`)) {
         const btnIn = document.getElementById("btnCheckIn");
-        if (btnIn) btnIn.click(); // [출근하기] 버튼 자동으로 클릭 실행
+        if (btnIn) btnIn.click();
       } else {
         checkAttendanceState();
       }
