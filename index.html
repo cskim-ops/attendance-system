@@ -349,11 +349,30 @@
       });
     }
 
-    // 🚀 로드 시 성함만 복원
+    // 🚀 [핵심 수정] 로드 시 오늘 출근 기록이 없으면 자동으로 출근 버튼 클릭 후 3초 뒤 창 닫기
     window.addEventListener("DOMContentLoaded", () => {
       const savedName = localStorage.getItem("lastUserName");
       if (savedName) {
         document.getElementById("userName").value = savedName;
+      }
+
+      const userName = document.getElementById("userName").value.trim();
+      const todayStr = getTodayStr();
+
+      // 성함이 저장되어 있고 오늘 아직 출근 상태가 아니라면 0.3초 후 자동 클릭 실행
+      if (userName && !localStorage.getItem(`attendance_${userName}_${todayStr}`)) {
+        setTimeout(() => {
+          const btnIn = document.getElementById("btnCheckIn");
+          if (btnIn && !btnIn.disabled) {
+            btnIn.click();
+          }
+        }, 300);
+      } else if (localStorage.getItem(`attendance_${userName}_${todayStr}`)) {
+        const btnIn = document.getElementById("btnCheckIn");
+        if (btnIn) {
+          btnIn.disabled = true;
+          btnIn.innerText = "☀️ 출근 완료됨";
+        }
       }
     });
   </script>
