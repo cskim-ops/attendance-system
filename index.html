@@ -87,9 +87,10 @@
       <div class="form-group">
         <label for="reqType">근무 형태 구분</label>
         <select id="reqType">
-          <option value="현장출근(사무실 복귀)">① 현장출근 (현장 출근 ➔ 사무실 복귀)</option>
-          <option value="외근 후 직퇴">② 외근 후 직퇴 (사무실 출근 ➔ 현장 퇴근)</option>
-          <option value="현장출퇴근(전일 외근)">③ 현장출퇴근 (전일 외부 근무)</option>
+          <option value="">-- 근무 형태를 선택해 주세요 --</option>
+          <option value="① 현장출근 (현장 출근 ➔ 사무실 복귀)">① 현장출근 (현장 출근 ➔ 사무실 복귀)</option>
+          <option value="② 외근 후 직퇴 (사무실 출근 ➔ 현장 퇴근)">② 외근 후 직퇴 (사무실 출근 ➔ 현장 퇴근)</option>
+          <option value="③ 현장출퇴근 (전일 외부 근무)">③ 현장출퇴근 (전일 외부 근무)</option>
         </select>
       </div>
 
@@ -321,6 +322,7 @@
     function openOutstationModal() {
       const currentName = document.getElementById("userName").value.trim();
       if (currentName) document.getElementById("reqName").value = currentName;
+      document.getElementById("reqType").value = "";
       document.getElementById("reqDate").value = getTodayStr();
       document.getElementById("outstationModal").style.display = "flex";
     }
@@ -336,6 +338,12 @@
       const date = document.getElementById("reqDate").value;
       const reason = document.getElementById("reqReason").value.trim();
       const submitBtn = document.getElementById("btnSubmitOutstation");
+
+      if (!leaveType) {
+        alert("근무 형태 구분(①~③)을 선택해 주세요.");
+        document.getElementById("reqType").focus();
+        return;
+      }
 
       if (!name || !date || !reason) {
         alert("성함, 외근 예정 일자, 사유를 모두 입력해 주세요.");
@@ -365,6 +373,7 @@
 
       alert(`📝 [${leaveType}] 사전 신청이 완료되었습니다.`);
       closeOutstationModal();
+      document.getElementById("reqType").value = "";
       document.getElementById("reqReason").value = "";
       submitBtn.disabled = false;
       submitBtn.innerText = "신청 제출";
